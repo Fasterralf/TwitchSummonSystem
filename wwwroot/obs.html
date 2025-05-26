@@ -63,7 +63,7 @@
     <script>
         // SignalR Verbindung
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl("http://localhost:5173/summonhub")
+            .withUrl("/summonhub")
             .build();
 
         // Verbindung starten
@@ -112,7 +112,7 @@
         }
 
         function loadCurrentPity() {
-            fetch('http://localhost:5173/api/summon/pity')
+            fetch('/api/summon/pity')
                 .then(response => response.json())
                 .then(data => {
                     updatePityCounter(data.currentPity);
