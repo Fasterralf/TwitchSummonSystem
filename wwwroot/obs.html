@@ -1,0 +1,123 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Twitch Summon System</title>
+    <style>
+        body {
+            background: transparent;
+            font-family: 'Arial Black', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: white;
+        }
+
+        .summon-result {
+            text-align: center;
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            display: none;
+        }
+
+        .gold {
+            color: #FFD700;
+            animation: goldGlow 1s ease-in-out infinite alternate;
+        }
+
+        .no-gold {
+            color: #888888;
+        }
+
+        .pity-counter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        @keyframes goldGlow {
+            from {
+                text-shadow: 3px 3px 6px rgba(255,215,0,0.8);
+            }
+
+            to {
+                text-shadow: 3px 3px 20px rgba(255,215,0,1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="pity-counter">
+        Pity: <span id="pityCount">0</span>
+    </div>
+
+    <div id="summonResult" class="summon-result">
+        <div id="resultText"></div>
+        <div id="username" style="font-size: 24px; margin-top: 10px;"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script>
+        // SignalR Verbindung
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("http://localhost:5173/summonhub")
+            .build();
+
+        // Verbindung starten
+        connection.start().then(function () {
+            console.log("SignalR verbunden");
+            loadCurrentPity();
+        }).catch(function (err) {
+            console.error("SignalR Fehler: " + err.toString());
+        });
+
+        // Summon Ergebnis empfangen
+        connection.on("SummonResult", function (result) {
+            showSummonResult(result);
+            updatePityCounter(result.pityCount);
+        });
+
+        // Pity Reset empfangen
+        connection.on("PityReset", function (pityData) {
+            updatePityCounter(pityData.currentPity);
+        });
+
+        function showSummonResult(result) {
+            const resultDiv = document.getElementById('summonResult');
+            const resultText = document.getElementById('resultText');
+            const username = document.getElementById('username');
+
+            if (result.isGold) {
+                resultText.textContent = "⭐ GOLD! ⭐";
+                resultDiv.className = "summon-result gold";
+            } else {
+                resultText.textContent = "Kein Gold";
+                resultDiv.className = "summon-result no-gold";
+            }
+
+            username.textContent = result.username;
+            resultDiv.style.display = 'block';
+
+            // Nach 5 Sekunden ausblenden
+            setTimeout(() => {
+                resultDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function updatePityCounter(pityCount) {
+            document.getElementById('pityCount').textContent = pityCount;
+        }
+
+        function loadCurrentPity() {
+            fetch('http://localhost:5173/api/summon/pity')
+                .then(response => response.json())
+                .then(data => {
+                    updatePityCounter(data.currentPity);
+                });
+        }
+    </script>
+</body>
+</html>
