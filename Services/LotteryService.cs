@@ -1,15 +1,19 @@
 ﻿using TwitchSummonSystem.Models;
 using Newtonsoft.Json;
+using Microsoft.AspNetCore.SignalR;
+using TwitchSummonSystem.Hubs;
 
 namespace TwitchSummonSystem.Services
 {
     public class LotteryService
     {
         private readonly string _dataFilePath = "lottery_data.json";
+        private readonly IHubContext<SummonHub> _hubContext;
         private LotteryData _lotteryData;
 
-        public LotteryService()
+        public LotteryService(IHubContext<SummonHub> hubContext) // PARAMETER HINZUFÜGEN
         {
+            _hubContext = hubContext; // HINZUFÜGEN
             LoadLotteryData();
         }
 
@@ -70,6 +74,20 @@ namespace TwitchSummonSystem.Services
             _lotteryData.LastSummon = DateTime.Now;
             SaveLotteryData();
 
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _hubContext.Clients.All.SendAsync("SummonResult", result);
+                    await _hubContext.Clients.All.SendAsync("LotteryUpdate", _lotteryData);
+                    Console.WriteLine($"📡 SignalR Events gesendet: Summon + LotteryUpdate");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ SignalR Fehler: {ex.Message}");
+                }
+            });
+
             return result;
         }
 
@@ -79,6 +97,20 @@ namespace TwitchSummonSystem.Services
             _lotteryData.LoseBalls = 79;
             _lotteryData.TotalBalls = 80;
             SaveLotteryData();
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _hubContext.Clients.All.SendAsync("PityReset", _lotteryData);
+                    await _hubContext.Clients.All.SendAsync("LotteryUpdate", _lotteryData);
+                    Console.WriteLine($"📡 SignalR Events gesendet: PityReset + LotteryUpdate");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ SignalR Fehler: {ex.Message}");
+                }
+            });
         }
 
         public double CalculateGoldChance()
