@@ -8,13 +8,13 @@ namespace TwitchSummonSystem.Services
     public class TwitchService
     {
         private readonly TwitchAPI _twitchApi;
-        private readonly PityService _pityService;
+        private readonly LotteryService _lotteryService; // GEÄNDERT
         private readonly IHubContext<SummonHub> _hubContext;
         private readonly IConfiguration _configuration;
 
-        public TwitchService(PityService pityService, IHubContext<SummonHub> hubContext, IConfiguration configuration)
+        public TwitchService(LotteryService lotteryService, IHubContext<SummonHub> hubContext, IConfiguration configuration)
         {
-            _pityService = pityService;
+            _lotteryService = lotteryService; // GEÄNDERT
             _hubContext = hubContext;
             _configuration = configuration;
             _twitchApi = new TwitchAPI();
@@ -43,7 +43,7 @@ namespace TwitchSummonSystem.Services
             if (rewardTitle.Contains(summonRewardName) || rewardTitle.ToLower().Contains("test"))
             {
                 // Summon ausführen
-                var result = _pityService.PerformSummon(username);
+                var result = _lotteryService.PerformSummon(username);
 
                 // Live-Update an OBS
                 await _hubContext.Clients.All.SendAsync("SummonResult", result);

@@ -8,7 +8,7 @@ namespace TwitchSummonSystem.Services
 {
     public class TwitchEventSubService
     {
-        private readonly PityService _pityService;
+        private readonly LotteryService _lotteryService;
         private readonly IHubContext<SummonHub> _hubContext;
         private readonly IConfiguration _configuration;
         private readonly TokenService _tokenService;
@@ -17,9 +17,9 @@ namespace TwitchSummonSystem.Services
 
         private readonly TwitchChatService _chatService;
 
-        public TwitchEventSubService(PityService pityService, IHubContext<SummonHub> hubContext, IConfiguration configuration, TokenService tokenService, TwitchChatService chatService)
+        public TwitchEventSubService(LotteryService lotteryService, IHubContext<SummonHub> hubContext, IConfiguration configuration, TokenService tokenService, TwitchChatService chatService)
         {
-            _pityService = pityService;
+            _lotteryService = lotteryService;
             _hubContext = hubContext;
             _configuration = configuration;
             _tokenService = tokenService;
@@ -116,7 +116,6 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-        // Rest bleibt gleich...
         public async Task<SummonResult> HandleChannelPointRedemption(JsonElement eventData)
         {
             try
@@ -131,7 +130,7 @@ namespace TwitchSummonSystem.Services
                 if (rewardTitle?.ToLower() == summonRewardName?.ToLower() ||
                     rewardTitle?.ToLower().Contains("test") == true)
                 {
-                    var result = _pityService.PerformSummon(username);
+                    var result = _lotteryService.PerformSummon(username);
                     await _hubContext.Clients.All.SendAsync("SummonResult", result);
 
                     _chatService.SendSummonResult(username, result.IsGold, result.PityCount);

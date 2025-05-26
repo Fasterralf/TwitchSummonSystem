@@ -13,14 +13,14 @@ namespace TwitchSummonSystem.Controllers
     public class TwitchController : ControllerBase
     {
         private readonly TwitchEventSubService _eventSubService;
-        private readonly PityService _pityService;
+        private readonly LotteryService _lotteryService; // GEÄNDERT
         private readonly IHubContext<SummonHub> _hubContext; // NEU
 
 
-        public TwitchController(TwitchEventSubService eventSubService, PityService pityService, IHubContext<SummonHub> hubContext) // NEU
+        public TwitchController(TwitchEventSubService eventSubService, LotteryService lotteryService, IHubContext<SummonHub> hubContext) // GEÄNDERT
         {
             _eventSubService = eventSubService;
-            _pityService = pityService;
+            _lotteryService = lotteryService; // GEÄNDERT
             _hubContext = hubContext; // NEU
         }
 
@@ -92,7 +92,7 @@ namespace TwitchSummonSystem.Controllers
             try
             {
                 // Direkt den PityService aufrufen (ohne EventSub)
-                var result = _pityService.PerformSummon(request.Username ?? "TestUser");
+                var result = _lotteryService.PerformSummon(request.Username ?? "TestUser");
 
                 // Live-Update an OBS senden
                 await _hubContext.Clients.All.SendAsync("SummonResult", result);

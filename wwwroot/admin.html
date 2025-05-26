@@ -154,6 +154,14 @@
                 <div class="stat-number" id="goldRate">-</div>
                 <div>Gold Rate %</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-number" id="ballsRemaining">-</div>
+                <div>Kugeln übrig</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="currentChance">-</div>
+                <div>Aktuelle Chance</div>
+            </div>
         </div>
         <button class="button" onclick="loadStats()">🔄 Aktualisieren</button>
     </div>
@@ -272,35 +280,41 @@
         }
 
         async function loadStats() {
-    try {
-        const response = await fetch('/api/summon/stats');
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            try {
+                const response = await fetch('/api/summon/stats');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const stats = await response.json();
+                console.log('Stats Response:', stats);
+
+                document.getElementById('currentPity').textContent = stats.CurrentPity || 0;
+                document.getElementById('totalSummons').textContent = stats.TotalSummons || 0;
+                document.getElementById('totalGolds').textContent = stats.TotalGolds || 0;
+                document.getElementById('ballsRemaining').textContent = stats.RemainingBalls || 80; // NEU
+
+                const goldRate = stats.GoldRate || 0;
+                document.getElementById('goldRate').textContent = goldRate.toFixed(1) + '%';
+
+                const currentChance = stats.GoldChance || 1.25;
+                document.getElementById('currentChance').textContent = currentChance.toFixed(1) + '%'; // NEU
+
+                log(`📊 Stats geladen: ${stats.CurrentPity || 0}/80 Pity, ${stats.RemainingBalls || 80} Kugeln, ${currentChance.toFixed(1)}% Chance`);
+            } catch (error) {
+                log(`❌ Stats Fehler: ${error.message}`);
+                console.error('Stats Error:', error);
+
+                // Fallback values
+                document.getElementById('currentPity').textContent = '?';
+                document.getElementById('totalSummons').textContent = '?';
+                document.getElementById('totalGolds').textContent = '?';
+                document.getElementById('goldRate').textContent = '?%';
+                document.getElementById('ballsRemaining').textContent = '?'; // NEU
+                document.getElementById('currentChance').textContent = '?%'; // NEU
+            }
         }
-        
-        const stats = await response.json();
-        console.log('Stats Response:', stats);
-        
-        document.getElementById('currentPity').textContent = stats.CurrentPity || 0;
-        document.getElementById('totalSummons').textContent = stats.TotalSummons || 0;
-        document.getElementById('totalGolds').textContent = stats.TotalGolds || 0;
-        
-        const goldRate = stats.GoldRate || 0;
-        document.getElementById('goldRate').textContent = goldRate.toFixed(1) + '%';
-        
-        log(`📊 Stats geladen: ${stats.CurrentPity || 0}/80 Pity, ${stats.TotalGolds || 0}/${stats.TotalSummons || 0} Golds`);
-    } catch (error) {
-        log(`❌ Stats Fehler: ${error.message}`);
-        console.error('Stats Error:', error);
-        
-        // Fallback values
-        document.getElementById('currentPity').textContent = '?';
-        document.getElementById('totalSummons').textContent = '?';
-        document.getElementById('totalGolds').textContent = '?';
-        document.getElementById('goldRate').textContent = '?%';
-    }
-}
 
         function openOBS() {
             window.open('/obs.html', '_blank');

@@ -51,7 +51,9 @@
 </head>
 <body>
     <div class="pity-counter">
-        Pity: <span id="pityCount">0</span>
+        Pity: <span id="pityCount">0</span><br>
+        Kugeln: <span id="ballCount">80</span><br>
+        Chance: <span id="goldChance">1.3%</span>
     </div>
 
     <div id="summonResult" class="summon-result">
@@ -81,8 +83,10 @@
         });
 
         // Pity Reset empfangen
-        connection.on("PityReset", function (pityData) {
-            updatePityCounter(pityData.currentPity);
+        connection.on("PityReset", function (lotteryData) {
+            updatePityCounter(lotteryData.currentPity || 0);
+            updateBallCount(lotteryData.totalBalls || 80);
+            updateGoldChance(lotteryData.goldBalls || 1, lotteryData.totalBalls || 80);
         });
 
         function showSummonResult(result) {
@@ -111,12 +115,24 @@
             document.getElementById('pityCount').textContent = pityCount;
         }
 
+        function updateBallCount(ballCount) {
+            document.getElementById('ballCount').textContent = ballCount;
+        }
+
+        function updateGoldChance(goldBalls, totalBalls) {
+            const chance = (goldBalls / totalBalls * 100).toFixed(1);
+            document.getElementById('goldChance').textContent = chance + '%';
+        }
+
         function loadCurrentPity() {
             fetch('/api/summon/pity')
                 .then(response => response.json())
                 .then(data => {
-                    updatePityCounter(data.currentPity);
-                });
+                    updatePityCounter(data.currentPity || 0);
+                    updateBallCount(data.totalBalls || 80);
+                    updateGoldChance(data.goldBalls || 1, data.totalBalls || 80);
+                })
+                .catch(err => console.error('Fehler beim Laden:', err));
         }
     </script>
 </body>

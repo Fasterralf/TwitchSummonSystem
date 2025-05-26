@@ -10,12 +10,12 @@ namespace TwitchSummonSystem.Controllers
     [Route("api/[controller]")]
     public class SummonController : ControllerBase
     {
-        private readonly PityService _pityService;
+        private readonly LotteryService _lotteryService; // GEÄNDERT
         private readonly IHubContext<SummonHub> _hubContext;
 
-        public SummonController(PityService pityService, IHubContext<SummonHub> hubContext)
+        public SummonController(LotteryService lotteryService, IHubContext<SummonHub> hubContext) // GEÄNDERT
         {
-            _pityService = pityService;
+            _lotteryService = lotteryService; // GEÄNDERT
             _hubContext = hubContext;
         }
 
@@ -28,7 +28,7 @@ namespace TwitchSummonSystem.Controllers
             }
 
             // Summon durchführen
-            var result = _pityService.PerformSummon(request.Username);
+            var result = _lotteryService.PerformSummon(request.Username); // GEÄNDERT
 
             // Live-Update an OBS senden
             await _hubContext.Clients.All.SendAsync("SummonResult", result);
@@ -37,36 +37,37 @@ namespace TwitchSummonSystem.Controllers
         }
 
         [HttpGet("pity")]
-        public ActionResult<PityData> GetPityData()
+        public ActionResult<LotteryData> GetPityData() // GEÄNDERT Return Type
         {
-            var pityData = _pityService.GetPityData();
-            return Ok(pityData);
+            var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
+            return Ok(lotteryData);
         }
 
         [HttpPost("pity/reset")]
         public async Task<ActionResult> ResetPity()
         {
-            _pityService.ResetPity();
-            var pityData = _pityService.GetPityData();
+            _lotteryService.ResetLottery(); // GEÄNDERT
+            var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
 
             // Live-Update an OBS senden
-            await _hubContext.Clients.All.SendAsync("PityReset", pityData);
+            await _hubContext.Clients.All.SendAsync("PityReset", lotteryData);
 
-            return Ok(new { message = "Pity wurde zurückgesetzt", pityData });
+            return Ok(new { message = "Lottery wurde zurückgesetzt", lotteryData }); // GEÄNDERT
         }
 
         [HttpGet("stats")]
         public ActionResult GetStats()
         {
-            var pityData = _pityService.GetPityData();
-
+            var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
             var stats = new
             {
-                CurrentPity = pityData.CurrentPity,
-                TotalSummons = pityData.TotalSummons,
-                TotalGolds = pityData.TotalGolds,
-                GoldRate = pityData.TotalSummons > 0 ? (double)pityData.TotalGolds / pityData.TotalSummons * 100 : 0,
-                LastSummon = pityData.LastSummon
+                CurrentPity = _lotteryService.GetCurrentPity(), // GEÄNDERT
+                TotalSummons = lotteryData.TotalSummons,
+                TotalGolds = lotteryData.TotalGolds,
+                GoldRate = lotteryData.TotalSummons > 0 ? (double)lotteryData.TotalGolds / lotteryData.TotalSummons * 100 : 0,
+                LastSummon = lotteryData.LastSummon,
+                RemainingBalls = lotteryData.TotalBalls, // NEU
+                GoldChance = _lotteryService.CalculateGoldChance() * 100 // NEU
             };
 
             return Ok(stats);

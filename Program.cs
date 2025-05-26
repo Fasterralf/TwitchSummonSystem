@@ -8,7 +8,7 @@ builder.Services.AddControllers();
 builder.Services.AddSignalR();
 
 // Unsere Services registrieren
-builder.Services.AddSingleton<PityService>();
+builder.Services.AddSingleton<LotteryService>();
 builder.Services.AddSingleton<TwitchService>();
 builder.Services.AddSingleton<TokenService>(); // NEU
 builder.Services.AddSingleton<TwitchChatService>(); // NEU

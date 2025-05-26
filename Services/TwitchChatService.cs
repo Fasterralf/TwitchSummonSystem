@@ -10,13 +10,13 @@ namespace TwitchSummonSystem.Services
     public class TwitchChatService
     {
         private readonly IConfiguration _configuration;
-        private readonly PityService _pityService;
+        private readonly LotteryService _lotteryService;
         private TwitchClient _client;
 
-        public TwitchChatService(IConfiguration configuration, PityService pityService)
+        public TwitchChatService(IConfiguration configuration, LotteryService lotteryService)
         {
             _configuration = configuration;
-            _pityService = pityService;
+            _lotteryService = lotteryService;
             InitializeChatBot();
         }
 
@@ -66,7 +66,6 @@ namespace TwitchSummonSystem.Services
             Console.WriteLine($"✅ Chat Bot ist Kanal {e.Channel} beigetreten");
         }
 
-        // KORRIGIERT: Richtige Event Handler Signatur für OnDisconnected
         private void OnDisconnected(object sender, OnDisconnectedEventArgs e)
         {
             Console.WriteLine("❌ Chat Bot getrennt");
@@ -80,48 +79,51 @@ namespace TwitchSummonSystem.Services
             // Chat Commands
             if (message == "!pity")
             {
-                var pityCount = _pityService.GetCurrentPity();
-                SendMessage($"@{username} Aktueller Pity: {pityCount}/80 (Gold Chance: {_pityService.CalculateGoldChance():F1}%)");
+                var pityCount = _lotteryService.GetCurrentPity(); // GEÄNDERT
+                var goldChance = _lotteryService.CalculateGoldChance() * 100; // GEÄNDERT
+                var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
+                SendMessage($"@{username} Pity: {pityCount}/80 | Gold Chance: {goldChance:F1}% | Kugeln im Topf: {lotteryData.TotalBalls}");
             }
             else if (message == "!pity reset" && (e.ChatMessage.IsModerator || e.ChatMessage.IsBroadcaster))
             {
-                _pityService.ResetPity();
-                SendMessage($"@{username} Pity wurde auf 0 zurückgesetzt!");
+                _lotteryService.ResetLottery(); // GEÄNDERT
+                SendMessage($"@{username} Lottery wurde zurückgesetzt!");
             }
             else if (message == "!summon stats")
             {
-                var pityCount = _pityService.GetCurrentPity();
-                var goldChance = _pityService.CalculateGoldChance();
-                SendMessage($"📊 Summon Stats: Pity {pityCount}/80 | Gold Chance: {goldChance:F1}% | Hard Pity in {80 - pityCount} Summons");
+                var pityCount = _lotteryService.GetCurrentPity(); // GEÄNDERT
+                var goldChance = _lotteryService.CalculateGoldChance() * 100; // GEÄNDERT
+                var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
+                SendMessage($"📊 Stats: Pity {pityCount}/80 | Gold Chance: {goldChance:F1}% | Kugeln: {lotteryData.TotalBalls} | Guaranteed in {lotteryData.LoseBalls}");
             }
         }
 
         public void SendSummonResult(string username, bool isGold, int pityCount)
         {
+            var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
+            var goldChance = _lotteryService.CalculateGoldChance() * 100; // GEÄNDERT
+
             if (isGold)
             {
-                SendMessage($"🌟✨ @{username} hat LEGENDARY GOLD erhalten! ⭐🎉 Pity Reset! Glückwunsch! 🎊");
+                SendMessage($"🌟✨ @{username} hat LEGENDARY GOLD erhalten! ⭐🎉 Lottery Reset! Glückwunsch! 🎊");
             }
             else
             {
-                var goldChance = _pityService.CalculateGoldChance(pityCount);
-                var remaining = 80 - pityCount;
-
-                if (pityCount >= 74) // Soft Pity
+                var remaining = lotteryData.LoseBalls; // GEÄNDERT
+                if (lotteryData.TotalBalls <= 6) // Sehr wenige Kugeln übrig
                 {
-                    SendMessage($"🔥 @{username} Soft Pity Zone! Pity: {pityCount}/80 | Chance: {goldChance:F1}% | Guaranteed in {remaining}!");
+                    SendMessage($"🔥 @{username} FAST GUARANTEED! Nur noch {lotteryData.TotalBalls} Kugeln! Chance: {goldChance:F1}%!");
                 }
-                else if (pityCount >= 60) // Getting close
+                else if (lotteryData.TotalBalls <= 20) // Getting close
                 {
-                    SendMessage($"⚡ @{username} Getting close! Pity: {pityCount}/80 | Chance: {goldChance:F1}% | {remaining} until guaranteed!");
+                    SendMessage($"⚡ @{username} Getting close! {lotteryData.TotalBalls} Kugeln übrig | Chance: {goldChance:F1}%");
                 }
                 else
                 {
-                    SendMessage($"❌ @{username} No gold this time. Pity: {pityCount}/80 | Chance: {goldChance:F1}%");
+                    SendMessage($"❌ @{username} No gold. Pity: {pityCount}/80 | Chance: {goldChance:F1}% | {lotteryData.TotalBalls} Kugeln übrig");
                 }
             }
         }
-
 
         private void SendMessage(string message)
         {

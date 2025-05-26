@@ -7,35 +7,38 @@ namespace TwitchSummonSystem.Controllers
     [Route("api/[controller]")]
     public class ChatController : ControllerBase
     {
-        private readonly PityService _pityService;
+        private readonly LotteryService _lotteryService; // GEÄNDERT
 
-        public ChatController(PityService pityService)
+        public ChatController(LotteryService lotteryService) // GEÄNDERT
         {
-            _pityService = pityService;
+            _lotteryService = lotteryService; // GEÄNDERT
         }
 
         [HttpGet("pity")]
         public ActionResult<string> GetPityCommand()
         {
-            var pityData = _pityService.GetPityData();
-            return Ok($"Aktueller Pity Count: {pityData.CurrentPity}/80");
+            var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
+            var currentPity = _lotteryService.GetCurrentPity(); // GEÄNDERT
+            return Ok($"Aktueller Pity Count: {currentPity}/80 | Verbleibende Kugeln: {lotteryData.TotalBalls}");
         }
 
         [HttpPost("pity/reset")]
         public ActionResult<string> ResetPityCommand()
         {
-            _pityService.ResetPity();
-            return Ok("Pity wurde auf 0 zurückgesetzt!");
+            _lotteryService.ResetLottery(); // GEÄNDERT
+            return Ok("Lottery wurde auf 0 zurückgesetzt!");
         }
 
         [HttpGet("stats")]
         public ActionResult<string> GetStatsCommand()
         {
-            var pityData = _pityService.GetPityData();
-            var goldRate = pityData.TotalSummons > 0 ?
-                (double)pityData.TotalGolds / pityData.TotalSummons * 100 : 0;
+            var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
+            var goldRate = lotteryData.TotalSummons > 0 ?
+                (double)lotteryData.TotalGolds / lotteryData.TotalSummons * 100 : 0;
+            var currentPity = _lotteryService.GetCurrentPity(); // GEÄNDERT
+            var goldChance = _lotteryService.CalculateGoldChance() * 100; // GEÄNDERT
 
-            return Ok($"📊 Stats: {pityData.TotalSummons} Summons | {pityData.TotalGolds} Golds | {goldRate:F1}% Rate | Pity: {pityData.CurrentPity}/80");
+            return Ok($"📊 Stats: {lotteryData.TotalSummons} Summons | {lotteryData.TotalGolds} Golds | {goldRate:F1}% Rate | Pity: {currentPity}/80 | Gold Chance: {goldChance:F1}%");
         }
     }
 }
