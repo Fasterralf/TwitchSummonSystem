@@ -146,35 +146,35 @@
         }
 
         function updateStatsFromLotteryData(lotteryData) {
+            // Diese Funktion bekommt SignalR-Daten (großgeschrieben)
             document.getElementById('summonCount').textContent = lotteryData.TotalSummons || 0;
             document.getElementById('goldCount').textContent = lotteryData.TotalGolds || 0;
-
             const goldRate = lotteryData.TotalSummons > 0 ?
                 (lotteryData.TotalGolds / lotteryData.TotalSummons * 100) : 0;
             document.getElementById('goldRate').textContent = goldRate.toFixed(1) + '%';
-
             document.getElementById('goldChance').textContent = (lotteryData.CurrentGoldChance || 0.8).toFixed(1) + '%';
         }
+
 
         function loadCurrentStats() {
             fetch('/api/summon/stats')
                 .then(response => response.json())
                 .then(stats => {
-                    document.getElementById('summonCount').textContent = stats.TotalSummons || 0;
-                    document.getElementById('goldCount').textContent = stats.TotalGolds || 0;
-
-                    const goldRate = stats.GoldRate || 0;
+                    document.getElementById('summonCount').textContent = stats.totalSummons || 0;
+                    document.getElementById('goldCount').textContent = stats.totalGolds || 0;
+                    const goldRate = stats.goldRate || 0;
                     document.getElementById('goldRate').textContent = goldRate.toFixed(1) + '%';
-
-                    const currentChance = stats.CurrentGoldChance || stats.GoldChance || 0.8;
+                    const currentChance = stats.currentGoldChance || stats.goldChance || 0.8;
                     document.getElementById('goldChance').textContent = currentChance.toFixed(1) + '%';
+
+                    console.log(`📊 Stats geladen: ${stats.totalSummons} Summons, ${currentChance}% Chance`);
                 })
                 .catch(err => {
                     console.error('Fehler beim Laden der Stats:', err);
-                    // Fallback Werte
                     document.getElementById('goldChance').textContent = '0.8%';
                 });
         }
+}
     </script>
 </body>
 </html>

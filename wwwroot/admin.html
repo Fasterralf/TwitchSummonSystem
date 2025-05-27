@@ -281,23 +281,18 @@
         async function loadStats() {
             try {
                 const response = await fetch('/api/summon/stats');
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
                 const stats = await response.json();
+
                 console.log('Stats Response:', stats);
 
-                document.getElementById('totalSummons').textContent = stats.TotalSummons || 0;
-                document.getElementById('totalGolds').textContent = stats.TotalGolds || 0;
+                // GEÄNDERT: Kleingeschriebene Property-Namen verwenden
+                document.getElementById('totalSummons').textContent = stats.totalSummons || 0;
+                document.getElementById('totalGolds').textContent = stats.totalGolds || 0;
+                document.getElementById('goldRate').textContent = (stats.goldRate || 0).toFixed(1) + '%';
+                document.getElementById('currentChance').textContent = (stats.currentGoldChance || 0.8).toFixed(1) + '%';
 
-                const goldRate = stats.GoldRate || 0;
-                document.getElementById('goldRate').textContent = goldRate.toFixed(1) + '%';
-
-                const currentChance = stats.CurrentGoldChance || stats.GoldChance || 0.8;
-                document.getElementById('currentChance').textContent = currentChance.toFixed(1) + '%';
-
-                // Berechne wann der nächste Bonus kommt
-                const totalSummons = stats.TotalSummons || 0;
+                // Nächster Bonus berechnen
+                const totalSummons = stats.totalSummons || 0;
                 let nextBonus = '';
                 if (totalSummons < 100) {
                     nextBonus = `in ${100 - totalSummons} Summons`;
@@ -307,18 +302,13 @@
                 }
                 document.getElementById('nextBonus').textContent = nextBonus;
 
-                log(`📊 Stats geladen: ${totalSummons} Summons, ${currentChance.toFixed(1)}% Chance`);
+                log(`📊 Stats geladen: ${totalSummons} Summons, ${(stats.currentGoldChance || 0.8).toFixed(1)}% Chance`);
             } catch (error) {
                 log(`❌ Stats Fehler: ${error.message}`);
                 console.error('Stats Error:', error);
-                // Fallback values
-                document.getElementById('totalSummons').textContent = '?';
-                document.getElementById('totalGolds').textContent = '?';
-                document.getElementById('goldRate').textContent = '?%';
-                document.getElementById('currentChance').textContent = '?%';
-                document.getElementById('nextBonus').textContent = '?';
             }
         }
+
 
         function openOBS() {
             window.open('/obs.html', '_blank');
