@@ -22,9 +22,6 @@ namespace TwitchSummonSystem.Services
             return _lotteryData;
         }
 
-        // DIESE METHODE KANN WEG - wird nicht mehr gebraucht
-        // public int GetCurrentPity()
-
         public SummonResult PerformSummon(string username)
         {
             // Aktuelle Chance berechnen
@@ -49,6 +46,8 @@ namespace TwitchSummonSystem.Services
             if (isGold)
             {
                 _lotteryData.TotalGolds++;
+                // HIER WAR DER FEHLER: Nach Gold-Summon CurrentGoldChance zurücksetzen!
+                _lotteryData.CurrentGoldChance = _lotteryData.BaseGoldChance;
             }
 
             _lotteryData.LastSummon = DateTime.Now;
@@ -70,6 +69,7 @@ namespace TwitchSummonSystem.Services
 
             return result;
         }
+
 
         private void CalculateCurrentGoldChance()
         {
