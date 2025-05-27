@@ -9,9 +9,9 @@ namespace TwitchSummonSystem.Controllers
     {
         private readonly LotteryService _lotteryService;
 
-        public ChatController(LotteryService lotteryService) 
+        public ChatController(LotteryService lotteryService)
         {
-            _lotteryService = lotteryService; 
+            _lotteryService = lotteryService;
         }
 
         [HttpGet("pity")]
@@ -19,14 +19,30 @@ namespace TwitchSummonSystem.Controllers
         {
             var lotteryData = _lotteryService.GetLotteryData();
             var goldChance = _lotteryService.CalculateGoldChance() * 100;
-            return Ok($"Aktuelle Gold Chance: {goldChance:F1}% | Summons: {lotteryData.TotalSummons} | Golds: {lotteryData.TotalGolds}");
+
+            // Nächster Bonus berechnen
+            var summonsSinceLastGold = lotteryData.SummonsSinceLastGold;
+            string nextBonusText = "";
+
+            if (summonsSinceLastGold < 100)
+            {
+                nextBonusText = $" | Nächster Bonus in {100 - summonsSinceLastGold} Summons";
+            }
+            else
+            {
+                var bonusRounds = (summonsSinceLastGold - 100) / 10;
+                var nextBonusAt = (bonusRounds + 1) * 10 + 100;
+                nextBonusText = $" | Nächster Bonus in {nextBonusAt - summonsSinceLastGold} Summons";
+            }
+
+            return Ok($"🎯 Gold Chance: {goldChance:F1}% | Summons: {lotteryData.TotalSummons} | Golds: {lotteryData.TotalGolds}{nextBonusText}");
         }
 
         [HttpPost("pity/reset")]
         public ActionResult<string> ResetPityCommand()
         {
             _lotteryService.ResetLottery();
-            return Ok("Lottery wurde auf 0 zurückgesetzt!");
+            return Ok("🔄 Lottery wurde zurückgesetzt! Nächster Bonus in 100 Summons.");
         }
 
         [HttpGet("stats")]
@@ -36,8 +52,23 @@ namespace TwitchSummonSystem.Controllers
             var goldRate = lotteryData.TotalSummons > 0 ?
                 (double)lotteryData.TotalGolds / lotteryData.TotalSummons * 100 : 0;
             var goldChance = _lotteryService.CalculateGoldChance() * 100;
-            return Ok($"📊 Stats: {lotteryData.TotalSummons} Summons | {lotteryData.TotalGolds} Golds | {goldRate:F1}% Rate | Gold Chance: {goldChance:F1}%");
-        }
 
+            // Nächster Bonus für Stats
+            var summonsSinceLastGold = lotteryData.SummonsSinceLastGold;
+            string nextBonusText = "";
+
+            if (summonsSinceLastGold < 100)
+            {
+                nextBonusText = $" | Bonus in {100 - summonsSinceLastGold}";
+            }
+            else
+            {
+                var bonusRounds = (summonsSinceLastGold - 100) / 10;
+                var nextBonusAt = (bonusRounds + 1) * 10 + 100;
+                nextBonusText = $" | Bonus in {nextBonusAt - summonsSinceLastGold}";
+            }
+
+            return Ok($"📊 {lotteryData.TotalSummons} Summons | {lotteryData.TotalGolds} Golds | {goldRate:F1}% Rate | {goldChance:F1}% Chance{nextBonusText}");
+        }
     }
 }

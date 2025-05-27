@@ -56,11 +56,11 @@ namespace TwitchSummonSystem.Controllers
         }
 
         [HttpGet("stats")]
-        public ActionResult<object> GetStats() 
+        public ActionResult<object> GetStats()
         {
             try
             {
-                var lotteryData = _lotteryService.GetLotteryData(); 
+                var lotteryData = _lotteryService.GetLotteryData();
 
                 var stats = new
                 {
@@ -69,18 +69,18 @@ namespace TwitchSummonSystem.Controllers
                     GoldRate = lotteryData.TotalSummons > 0 ?
                         (double)lotteryData.TotalGolds / lotteryData.TotalSummons * 100 : 0.0,
                     CurrentGoldChance = lotteryData.CurrentGoldChance,
-                    GoldChance = lotteryData.CurrentGoldChance 
+                    GoldChance = lotteryData.CurrentGoldChance,
+                    SummonsSinceLastGold = lotteryData.SummonsSinceLastGold 
                 };
 
                 return Ok(stats);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Stats Fehler: {ex.Message}"); 
+                Console.WriteLine($"❌ Stats Fehler: {ex.Message}");
                 return StatusCode(500, new { error = "Fehler beim Abrufen der Stats" });
             }
         }
-
     }
 
     public class SummonRequest

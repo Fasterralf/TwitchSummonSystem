@@ -284,32 +284,34 @@
             try {
                 const response = await fetch('/api/summon/stats');
                 const stats = await response.json();
-
                 console.log('Stats Response:', stats);
 
-                // GEÄNDERT: Kleingeschriebene Property-Namen verwenden
+                // Stats anzeigen
                 document.getElementById('totalSummons').textContent = stats.totalSummons || 0;
                 document.getElementById('totalGolds').textContent = stats.totalGolds || 0;
                 document.getElementById('goldRate').textContent = (stats.goldRate || 0).toFixed(1) + '%';
                 document.getElementById('currentChance').textContent = (stats.currentGoldChance || 0.8).toFixed(1) + '%';
 
-                // Nächster Bonus berechnen
-                const totalSummons = stats.totalSummons || 0;
+                const summonsSinceLastGold = stats.summonsSinceLastGold || 0;
                 let nextBonus = '';
-                if (totalSummons < 100) {
-                    nextBonus = `in ${100 - totalSummons} Summons`;
+
+                if (summonsSinceLastGold < 100) {
+                    nextBonus = `in ${100 - summonsSinceLastGold} Summons`;
                 } else {
-                    const nextMilestone = Math.ceil((totalSummons - 100) / 10) * 10 + 100;
-                    nextBonus = `in ${nextMilestone - totalSummons} Summons`;
+                    const bonusRounds = Math.floor((summonsSinceLastGold - 100) / 10);
+                    const nextBonusAt = (bonusRounds + 1) * 10 + 100;
+                    nextBonus = `in ${nextBonusAt - summonsSinceLastGold} Summons`;
                 }
+
                 document.getElementById('nextBonus').textContent = nextBonus;
 
-                log(`📊 Stats geladen: ${totalSummons} Summons, ${(stats.currentGoldChance || 0.8).toFixed(1)}% Chance`);
+                log(`📊 Stats geladen: ${stats.totalSummons} Summons, ${(stats.currentGoldChance || 0.8).toFixed(1)}% Chance`);
             } catch (error) {
                 log(`❌ Stats Fehler: ${error.message}`);
                 console.error('Stats Error:', error);
             }
         }
+
 
 
         function openOBS() {
