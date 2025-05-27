@@ -46,7 +46,7 @@ namespace TwitchSummonSystem.Services
                 _client.OnConnected += OnConnected;
                 _client.OnJoinedChannel += OnJoinedChannel;
                 _client.OnMessageReceived += OnMessageReceived;
-                _client.OnDisconnected += OnDisconnected; // KORRIGIERT
+                _client.OnDisconnected += OnDisconnected; 
 
                 _client.Connect();
             }
@@ -76,52 +76,38 @@ namespace TwitchSummonSystem.Services
             var message = e.ChatMessage.Message.ToLower();
             var username = e.ChatMessage.Username;
 
-            // Chat Commands
             if (message == "!pity")
             {
-                var pityCount = _lotteryService.GetCurrentPity(); // GEÄNDERT
-                var goldChance = _lotteryService.CalculateGoldChance() * 100; // GEÄNDERT
-                var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
-                SendMessage($"@{username} Pity: {pityCount}/80 | Gold Chance: {goldChance:F1}% | Kugeln im Topf: {lotteryData.TotalBalls}");
+                var goldChance = _lotteryService.CalculateGoldChance() * 100;
+                var lotteryData = _lotteryService.GetLotteryData();
+                SendMessage($"@{username} Gold Chance: {goldChance:F1}% | Summons: {lotteryData.TotalSummons} | Golds: {lotteryData.TotalGolds}");
             }
             else if (message == "!pity reset" && (e.ChatMessage.IsModerator || e.ChatMessage.IsBroadcaster))
             {
-                _lotteryService.ResetLottery(); // GEÄNDERT
+                _lotteryService.ResetLottery();
                 SendMessage($"@{username} Lottery wurde zurückgesetzt!");
             }
             else if (message == "!summon stats")
             {
-                var pityCount = _lotteryService.GetCurrentPity(); // GEÄNDERT
-                var goldChance = _lotteryService.CalculateGoldChance() * 100; // GEÄNDERT
-                var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
-                SendMessage($"📊 Stats: Pity {pityCount}/80 | Gold Chance: {goldChance:F1}% | Kugeln: {lotteryData.TotalBalls} | Guaranteed in {lotteryData.LoseBalls}");
+                var goldChance = _lotteryService.CalculateGoldChance() * 100;
+                var lotteryData = _lotteryService.GetLotteryData();
+                var goldRate = lotteryData.TotalSummons > 0 ? (double)lotteryData.TotalGolds / lotteryData.TotalSummons * 100 : 0;
+                SendMessage($"📊 Stats: {lotteryData.TotalSummons} Summons | {goldChance:F1}% Chance | {goldRate:F1}% Rate | {lotteryData.TotalGolds} Golds");
             }
         }
 
         public void SendSummonResult(string username, bool isGold, int pityCount)
         {
-            var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
-            var goldChance = _lotteryService.CalculateGoldChance() * 100; // GEÄNDERT
+            var lotteryData = _lotteryService.GetLotteryData();
+            var goldChance = _lotteryService.CalculateGoldChance() * 100;
 
             if (isGold)
             {
-                SendMessage($"🌟✨ @{username} hat LEGENDARY GOLD erhalten! ⭐🎉 Lottery Reset! Glückwunsch! 🎊");
+                SendMessage($"🌟✨ @{username} hat LEGENDARY GOLD erhalten! ⭐🎉 Chance war: {goldChance:F1}%! 🎊");
             }
             else
             {
-                var remaining = lotteryData.LoseBalls; // GEÄNDERT
-                if (lotteryData.TotalBalls <= 6) // Sehr wenige Kugeln übrig
-                {
-                    SendMessage($"🔥 @{username} FAST GUARANTEED! Nur noch {lotteryData.TotalBalls} Kugeln! Chance: {goldChance:F1}%!");
-                }
-                else if (lotteryData.TotalBalls <= 20) // Getting close
-                {
-                    SendMessage($"⚡ @{username} Getting close! {lotteryData.TotalBalls} Kugeln übrig | Chance: {goldChance:F1}%");
-                }
-                else
-                {
-                    SendMessage($"❌ @{username} No gold. Pity: {pityCount}/80 | Chance: {goldChance:F1}% | {lotteryData.TotalBalls} Kugeln übrig");
-                }
+                SendMessage($"❌ @{username} No gold. Chance: {goldChance:F1}% | Summons: {lotteryData.TotalSummons} | Golds: {lotteryData.TotalGolds}");
             }
         }
 

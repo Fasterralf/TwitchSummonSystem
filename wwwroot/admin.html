@@ -13,7 +13,7 @@
             background: #1a1a1a;
             color: white;
         }
-        
+
         .section {
             background: #2a2a2a;
             padding: 20px;
@@ -21,7 +21,7 @@
             border-radius: 10px;
             border: 1px solid #444;
         }
-        
+
         .button {
             background: #6441a5;
             color: white;
@@ -33,27 +33,27 @@
             margin: 5px;
             transition: background 0.3s;
         }
-        
-        .button:hover {
-            background: #7c5fb8;
-        }
-        
-        .button.danger {
-            background: #dc3545;
-        }
-        
-        .button.danger:hover {
-            background: #c82333;
-        }
-        
-        .button.success {
-            background: #28a745;
-        }
-        
-        .button.success:hover {
-            background: #218838;
-        }
-        
+
+            .button:hover {
+                background: #7c5fb8;
+            }
+
+            .button.danger {
+                background: #dc3545;
+            }
+
+                .button.danger:hover {
+                    background: #c82333;
+                }
+
+            .button.success {
+                background: #28a745;
+            }
+
+                .button.success:hover {
+                    background: #218838;
+                }
+
         input[type="text"], input[type="url"] {
             width: 100%;
             padding: 10px;
@@ -64,52 +64,52 @@
             color: white;
             font-size: 16px;
         }
-        
+
         .status {
             padding: 10px;
             margin: 10px 0;
             border-radius: 5px;
             font-weight: bold;
         }
-        
-        .status.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .status.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-        
+
+            .status.success {
+                background: #d4edda;
+                color: #155724;
+                border: 1px solid #c3e6cb;
+            }
+
+            .status.error {
+                background: #f8d7da;
+                color: #721c24;
+                border: 1px solid #f5c6cb;
+            }
+
+            .status.info {
+                background: #d1ecf1;
+                color: #0c5460;
+                border: 1px solid #bee5eb;
+            }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin: 15px 0;
         }
-        
+
         .stat-card {
             background: #333;
             padding: 15px;
             border-radius: 8px;
             text-align: center;
         }
-        
+
         .stat-number {
             font-size: 24px;
             font-weight: bold;
             color: #6441a5;
         }
-        
+
         .log {
             background: #000;
             color: #0f0;
@@ -124,24 +124,20 @@
 </head>
 <body>
     <h1>🎮 Twitch Summon System - Admin Panel</h1>
-    
+
     <!-- Quick Actions -->
     <div class="section">
         <h2>⚡ Quick Actions</h2>
         <button class="button success" onclick="simulateSummon()">🎲 Test Summon</button>
-        <button class="button danger" onclick="resetPity()">🔄 Pity Reset</button>
+        <button class="button danger" onclick="resetLottery()">🔄 Lottery Reset</button>
         <button class="button" onclick="loadStats()">📊 Stats laden</button>
         <button class="button" onclick="openOBS()">📺 OBS Overlay öffnen</button>
     </div>
-    
+
     <!-- Stats -->
     <div class="section">
         <h2>📊 Aktuelle Stats</h2>
         <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" id="currentPity">-</div>
-                <div>Current Pity</div>
-            </div>
             <div class="stat-card">
                 <div class="stat-number" id="totalSummons">-</div>
                 <div>Total Summons</div>
@@ -155,17 +151,21 @@
                 <div>Gold Rate %</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" id="ballsRemaining">-</div>
-                <div>Kugeln übrig</div>
-            </div>
-            <div class="stat-card">
                 <div class="stat-number" id="currentChance">-</div>
                 <div>Aktuelle Chance</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="baseChance">0.8%</div>
+                <div>Base Chance</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="nextBonus">-</div>
+                <div>Nächster Bonus</div>
             </div>
         </div>
         <button class="button" onclick="loadStats()">🔄 Aktualisieren</button>
     </div>
-    
+
     <!-- Test Bereich -->
     <div class="section">
         <h2>🧪 Test Bereich</h2>
@@ -174,7 +174,7 @@
         <button class="button" onclick="simulateCustomSummon()">🎯 Custom Test Summon</button>
         <button class="button" onclick="testMultipleSummons()">🎲 10x Test Summons</button>
     </div>
-    
+
     <!-- Live Log -->
     <div class="section">
         <h2>📝 Live Log</h2>
@@ -185,7 +185,7 @@
     </div>
 
     <script>
-        window.onload = function() {
+        window.onload = function () {
             loadStats();
             log('✅ Admin Panel geladen');
         };
@@ -206,33 +206,33 @@
         }
 
         async function simulateSummon() {
-    try {
-        log('🎲 Simuliere Summon...');
-        const response = await fetch('/api/twitch/simulate-reward', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ Username: 'AdminTest' })
-        });
+            try {
+                log('🎲 Simuliere Summon...');
+                const response = await fetch('/api/twitch/simulate-reward', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Username: 'AdminTest' })
+                });
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
 
-        const data = await response.json();
-        console.log('Summon Response:', data);
-        
-        if (data.success && data.result) {
-            const result = data.result;
-            log(`🎲 Summon: ${result.IsGold ? '⭐ GOLD!' : '❌ Kein Gold'} - Pity: ${result.PityCount || 'unknown'}/80`);
-            setTimeout(loadStats, 1000); // Warte kurz dann lade Stats
-        } else {
-            log(`❌ Summon fehlgeschlagen: ${JSON.stringify(data)}`);
+                const data = await response.json();
+                console.log('Summon Response:', data);
+
+                if (data.success && data.result) {
+                    const result = data.result;
+                    log(`🎲 Summon: ${result.IsGold ? '⭐ GOLD!' : '❌ Kein Gold'} - Chance: ${result.GoldChance.toFixed(1)}%`);
+                    setTimeout(loadStats, 1000);
+                } else {
+                    log(`❌ Summon fehlgeschlagen: ${JSON.stringify(data)}`);
+                }
+            } catch (error) {
+                log(`❌ Summon Fehler: ${error.message}`);
+                console.error('Summon Error:', error);
+            }
         }
-    } catch (error) {
-        log(`❌ Summon Fehler: ${error.message}`);
-        console.error('Summon Error:', error);
-    }
-}
 
         async function simulateCustomSummon() {
             const username = document.getElementById('testUsername').value || 'TestUser';
@@ -243,11 +243,10 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ Username: username })
                 });
-
                 const data = await response.json();
                 if (data.success) {
                     const result = data.result;
-                    log(`🎯 ${username}: ${result.IsGold ? '⭐ GOLD!' : '❌ Kein Gold'} - Pity: ${result.PityCount}/80`);
+                    log(`🎯 ${username}: ${result.IsGold ? '⭐ GOLD!' : '❌ Kein Gold'} - Chance: ${result.GoldChance.toFixed(1)}%`);
                     loadStats();
                 }
             } catch (error) {
@@ -264,55 +263,60 @@
             log('✅ 10x Test Summons abgeschlossen');
         }
 
-        async function resetPity() {
-            if (!confirm('Pity wirklich zurücksetzen?')) return;
-            
+        async function resetLottery() {
+            if (!confirm('Lottery wirklich zurücksetzen?')) return;
+
             try {
-                log('🔄 Setze Pity zurück...');
+                log('🔄 Setze Lottery zurück...');
                 const response = await fetch('/api/summon/pity/reset', { method: 'POST' });
                 const data = await response.json();
-                
-                log('✅ Pity wurde zurückgesetzt');
+
+                log('✅ Lottery wurde zurückgesetzt');
                 loadStats();
             } catch (error) {
-                log(`❌ Pity Reset Fehler: ${error.message}`);
+                log(`❌ Lottery Reset Fehler: ${error.message}`);
             }
         }
 
         async function loadStats() {
             try {
                 const response = await fetch('/api/summon/stats');
-
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
-
                 const stats = await response.json();
                 console.log('Stats Response:', stats);
 
-                document.getElementById('currentPity').textContent = stats.CurrentPity || 0;
                 document.getElementById('totalSummons').textContent = stats.TotalSummons || 0;
                 document.getElementById('totalGolds').textContent = stats.TotalGolds || 0;
-                document.getElementById('ballsRemaining').textContent = stats.RemainingBalls || 80; // NEU
 
                 const goldRate = stats.GoldRate || 0;
                 document.getElementById('goldRate').textContent = goldRate.toFixed(1) + '%';
 
-                const currentChance = stats.GoldChance || 1.25;
-                document.getElementById('currentChance').textContent = currentChance.toFixed(1) + '%'; // NEU
+                const currentChance = stats.CurrentGoldChance || stats.GoldChance || 0.8;
+                document.getElementById('currentChance').textContent = currentChance.toFixed(1) + '%';
 
-                log(`📊 Stats geladen: ${stats.CurrentPity || 0}/80 Pity, ${stats.RemainingBalls || 80} Kugeln, ${currentChance.toFixed(1)}% Chance`);
+                // Berechne wann der nächste Bonus kommt
+                const totalSummons = stats.TotalSummons || 0;
+                let nextBonus = '';
+                if (totalSummons < 100) {
+                    nextBonus = `in ${100 - totalSummons} Summons`;
+                } else {
+                    const nextMilestone = Math.ceil((totalSummons - 100) / 10) * 10 + 100;
+                    nextBonus = `in ${nextMilestone - totalSummons} Summons`;
+                }
+                document.getElementById('nextBonus').textContent = nextBonus;
+
+                log(`📊 Stats geladen: ${totalSummons} Summons, ${currentChance.toFixed(1)}% Chance`);
             } catch (error) {
                 log(`❌ Stats Fehler: ${error.message}`);
                 console.error('Stats Error:', error);
-
                 // Fallback values
-                document.getElementById('currentPity').textContent = '?';
                 document.getElementById('totalSummons').textContent = '?';
                 document.getElementById('totalGolds').textContent = '?';
                 document.getElementById('goldRate').textContent = '?%';
-                document.getElementById('ballsRemaining').textContent = '?'; // NEU
-                document.getElementById('currentChance').textContent = '?%'; // NEU
+                document.getElementById('currentChance').textContent = '?%';
+                document.getElementById('nextBonus').textContent = '?';
             }
         }
 

@@ -58,20 +58,19 @@ namespace TwitchSummonSystem.Controllers
         [HttpGet("stats")]
         public ActionResult GetStats()
         {
-            var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
+            var lotteryData = _lotteryService.GetLotteryData();
             var stats = new
             {
-                CurrentPity = _lotteryService.GetCurrentPity(), // GEÄNDERT
                 TotalSummons = lotteryData.TotalSummons,
                 TotalGolds = lotteryData.TotalGolds,
                 GoldRate = lotteryData.TotalSummons > 0 ? (double)lotteryData.TotalGolds / lotteryData.TotalSummons * 100 : 0,
                 LastSummon = lotteryData.LastSummon,
-                RemainingBalls = lotteryData.TotalBalls, // NEU
-                GoldChance = _lotteryService.CalculateGoldChance() * 100 // NEU
+                GoldChance = _lotteryService.CalculateGoldChance() * 100,
+                CurrentGoldChance = lotteryData.CurrentGoldChance
             };
-
             return Ok(stats);
         }
+
     }
 
     public class SummonRequest

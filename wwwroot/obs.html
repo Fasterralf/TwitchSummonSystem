@@ -28,14 +28,31 @@
             color: #888888;
         }
 
-        .pity-counter {
+        .stats-counter {
             position: absolute;
             top: 20px;
             right: 20px;
-            font-size: 24px;
-            background: rgba(0,0,0,0.7);
-            padding: 10px;
+            font-size: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
             border-radius: 10px;
+            border: 2px solid #6441a5;
+        }
+
+        .stat-line {
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            min-width: 200px;
+        }
+
+        .stat-label {
+            color: #ccc;
+        }
+
+        .stat-value {
+            color: #FFD700;
+            font-weight: bold;
         }
 
         @keyframes goldGlow {
@@ -50,10 +67,23 @@
     </style>
 </head>
 <body>
-    <div class="pity-counter">
-        Pity: <span id="pityCount">0</span><br>
-        Kugeln: <span id="ballCount">80</span><br>
-        Chance: <span id="goldChance">1.3%</span>
+    <div class="stats-counter">
+        <div class="stat-line">
+            <span class="stat-label">Summons:</span>
+            <span class="stat-value" id="summonCount">0</span>
+        </div>
+        <div class="stat-line">
+            <span class="stat-label">Golds:</span>
+            <span class="stat-value" id="goldCount">0</span>
+        </div>
+        <div class="stat-line">
+            <span class="stat-label">Chance:</span>
+            <span class="stat-value" id="goldChance">0.8%</span>
+        </div>
+        <div class="stat-line">
+            <span class="stat-label">Rate:</span>
+            <span class="stat-value" id="goldRate">0.0%</span>
+        </div>
     </div>
 
     <div id="summonResult" class="summon-result">
@@ -71,7 +101,7 @@
         // Verbindung starten
         connection.start().then(function () {
             console.log("SignalR verbunden");
-            loadCurrentPity();
+            loadCurrentStats();
         }).catch(function (err) {
             console.error("SignalR Fehler: " + err.toString());
         });
@@ -79,14 +109,18 @@
         // Summon Ergebnis empfangen
         connection.on("SummonResult", function (result) {
             showSummonResult(result);
-            updatePityCounter(result.pityCount);
+            // Stats nach Summon aktualisieren
+            setTimeout(loadCurrentStats, 1000);
         });
 
-        // Pity Reset empfangen
+        // Lottery Reset empfangen
         connection.on("PityReset", function (lotteryData) {
-            updatePityCounter(lotteryData.currentPity || 0);
-            updateBallCount(lotteryData.totalBalls || 80);
-            updateGoldChance(lotteryData.goldBalls || 1, lotteryData.totalBalls || 80);
+            loadCurrentStats();
+        });
+
+        // Lottery Update empfangen
+        connection.on("LotteryUpdate", function (lotteryData) {
+            updateStatsFromLotteryData(lotteryData);
         });
 
         function showSummonResult(result) {
@@ -94,7 +128,7 @@
             const resultText = document.getElementById('resultText');
             const username = document.getElementById('username');
 
-            if (result.isGold) {
+            if (result.IsGold || result.isGold) {
                 resultText.textContent = "⭐ GOLD! ⭐";
                 resultDiv.className = "summon-result gold";
             } else {
@@ -102,7 +136,7 @@
                 resultDiv.className = "summon-result no-gold";
             }
 
-            username.textContent = result.username;
+            username.textContent = result.Username || result.username;
             resultDiv.style.display = 'block';
 
             // Nach 5 Sekunden ausblenden
@@ -111,28 +145,35 @@
             }, 5000);
         }
 
-        function updatePityCounter(pityCount) {
-            document.getElementById('pityCount').textContent = pityCount;
+        function updateStatsFromLotteryData(lotteryData) {
+            document.getElementById('summonCount').textContent = lotteryData.TotalSummons || 0;
+            document.getElementById('goldCount').textContent = lotteryData.TotalGolds || 0;
+
+            const goldRate = lotteryData.TotalSummons > 0 ?
+                (lotteryData.TotalGolds / lotteryData.TotalSummons * 100) : 0;
+            document.getElementById('goldRate').textContent = goldRate.toFixed(1) + '%';
+
+            document.getElementById('goldChance').textContent = (lotteryData.CurrentGoldChance || 0.8).toFixed(1) + '%';
         }
 
-        function updateBallCount(ballCount) {
-            document.getElementById('ballCount').textContent = ballCount;
-        }
-
-        function updateGoldChance(goldBalls, totalBalls) {
-            const chance = (goldBalls / totalBalls * 100).toFixed(1);
-            document.getElementById('goldChance').textContent = chance + '%';
-        }
-
-        function loadCurrentPity() {
-            fetch('/api/summon/pity')
+        function loadCurrentStats() {
+            fetch('/api/summon/stats')
                 .then(response => response.json())
-                .then(data => {
-                    updatePityCounter(data.currentPity || 0);
-                    updateBallCount(data.totalBalls || 80);
-                    updateGoldChance(data.goldBalls || 1, data.totalBalls || 80);
+                .then(stats => {
+                    document.getElementById('summonCount').textContent = stats.TotalSummons || 0;
+                    document.getElementById('goldCount').textContent = stats.TotalGolds || 0;
+
+                    const goldRate = stats.GoldRate || 0;
+                    document.getElementById('goldRate').textContent = goldRate.toFixed(1) + '%';
+
+                    const currentChance = stats.CurrentGoldChance || stats.GoldChance || 0.8;
+                    document.getElementById('goldChance').textContent = currentChance.toFixed(1) + '%';
                 })
-                .catch(err => console.error('Fehler beim Laden:', err));
+                .catch(err => {
+                    console.error('Fehler beim Laden der Stats:', err);
+                    // Fallback Werte
+                    document.getElementById('goldChance').textContent = '0.8%';
+                });
         }
     </script>
 </body>

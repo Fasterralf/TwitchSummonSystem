@@ -11,9 +11,9 @@ namespace TwitchSummonSystem.Services
         private readonly IHubContext<SummonHub> _hubContext;
         private LotteryData _lotteryData;
 
-        public LotteryService(IHubContext<SummonHub> hubContext) // PARAMETER HINZUFÜGEN
+        public LotteryService(IHubContext<SummonHub> hubContext)
         {
-            _hubContext = hubContext; // HINZUFÜGEN
+            _hubContext = hubContext;
             LoadLotteryData();
         }
 
@@ -22,55 +22,35 @@ namespace TwitchSummonSystem.Services
             return _lotteryData;
         }
 
-        public int GetCurrentPity()
-        {
-            return 80 - _lotteryData.TotalBalls; // Wie viele Kugeln schon gezogen
-        }
+        // DIESE METHODE KANN WEG - wird nicht mehr gebraucht
+        // public int GetCurrentPity()
 
         public SummonResult PerformSummon(string username)
         {
-            // Berechne aktuelle Chance
-            double goldChance = (double)_lotteryData.GoldBalls / _lotteryData.TotalBalls;
+            // Aktuelle Chance berechnen
+            CalculateCurrentGoldChance();
 
-            // Ziehe zufällige Kugel
+            // Zufallszahl generieren
             Random random = new Random();
-            bool isGold = random.NextDouble() < goldChance;
+            double roll = random.NextDouble() * 100; // 0-100%
+            bool isGold = roll < _lotteryData.CurrentGoldChance;
 
             var result = new SummonResult
             {
                 IsGold = isGold,
-                PityCount = GetCurrentPity(),
-                GoldChance = goldChance * 100,
+                PityCount = 0, // Nicht mehr relevant, aber für Kompatibilität
+                GoldChance = _lotteryData.CurrentGoldChance,
                 Timestamp = DateTime.Now,
                 Username = username
             };
 
+            _lotteryData.TotalSummons++;
+
             if (isGold)
             {
-                // Gold gezogen - Reset das System
-                _lotteryData.GoldBalls = 1;
-                _lotteryData.LoseBalls = 79;
-                _lotteryData.TotalBalls = 80;
                 _lotteryData.TotalGolds++;
             }
-            else
-            {
-                // Lose gezogen - entferne eine Lose-Kugel
-                _lotteryData.LoseBalls--;
-                _lotteryData.TotalBalls--;
 
-                // Sicherheit: Wenn nur noch Gold übrig
-                if (_lotteryData.LoseBalls <= 0)
-                {
-                    result.IsGold = true;
-                    _lotteryData.GoldBalls = 1;
-                    _lotteryData.LoseBalls = 79;
-                    _lotteryData.TotalBalls = 80;
-                    _lotteryData.TotalGolds++;
-                }
-            }
-
-            _lotteryData.TotalSummons++;
             _lotteryData.LastSummon = DateTime.Now;
             SaveLotteryData();
 
@@ -91,11 +71,29 @@ namespace TwitchSummonSystem.Services
             return result;
         }
 
+        private void CalculateCurrentGoldChance()
+        {
+            double chance = _lotteryData.BaseGoldChance; // Start: 0.8%
+
+            if (_lotteryData.TotalSummons >= 100)
+            {
+                // Nach 100 Summons: +1%
+                chance += 1.0;
+
+                // Für jeden weiteren 10er Block: +1%
+                int additionalBlocks = (_lotteryData.TotalSummons - 100) / 10;
+                chance += additionalBlocks * 1.0;
+            }
+
+            _lotteryData.CurrentGoldChance = chance;
+        }
+
         public void ResetLottery()
         {
-            _lotteryData.GoldBalls = 1;
-            _lotteryData.LoseBalls = 79;
-            _lotteryData.TotalBalls = 80;
+            _lotteryData.BaseGoldChance = 0.8;
+            _lotteryData.CurrentGoldChance = 0.8;
+            _lotteryData.TotalSummons = 0;
+            _lotteryData.TotalGolds = 0;
             SaveLotteryData();
 
             _ = Task.Run(async () =>
@@ -115,7 +113,8 @@ namespace TwitchSummonSystem.Services
 
         public double CalculateGoldChance()
         {
-            return (double)_lotteryData.GoldBalls / _lotteryData.TotalBalls;
+            CalculateCurrentGoldChance();
+            return _lotteryData.CurrentGoldChance / 100.0; // Als Dezimalwert zurückgeben
         }
 
         private void LoadLotteryData()
@@ -126,6 +125,13 @@ namespace TwitchSummonSystem.Services
                 {
                     string json = File.ReadAllText(_dataFilePath);
                     _lotteryData = JsonConvert.DeserializeObject<LotteryData>(json) ?? new LotteryData();
+
+                    // Migration: Falls alte Daten vorhanden sind
+                    if (_lotteryData.BaseGoldChance == 0)
+                    {
+                        _lotteryData.BaseGoldChance = 0.8;
+                        _lotteryData.CurrentGoldChance = 0.8;
+                    }
                 }
                 catch
                 {
