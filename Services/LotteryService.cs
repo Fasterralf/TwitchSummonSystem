@@ -35,19 +35,20 @@ namespace TwitchSummonSystem.Services
             var result = new SummonResult
             {
                 IsGold = isGold,
-                PityCount = 0, // Nicht mehr relevant, aber für Kompatibilität
+                PityCount = _lotteryData.SummonsSinceLastGold, 
                 GoldChance = _lotteryData.CurrentGoldChance,
                 Timestamp = DateTime.Now,
                 Username = username
             };
 
             _lotteryData.TotalSummons++;
+            _lotteryData.SummonsSinceLastGold++;
 
             if (isGold)
             {
                 _lotteryData.TotalGolds++;
-                // HIER WAR DER FEHLER: Nach Gold-Summon CurrentGoldChance zurücksetzen!
                 _lotteryData.CurrentGoldChance = _lotteryData.BaseGoldChance;
+                _lotteryData.SummonsSinceLastGold = 0; 
             }
 
             _lotteryData.LastSummon = DateTime.Now;
@@ -73,15 +74,12 @@ namespace TwitchSummonSystem.Services
 
         private void CalculateCurrentGoldChance()
         {
-            double chance = _lotteryData.BaseGoldChance; // Start: 0.8%
+            double chance = _lotteryData.BaseGoldChance; 
 
-            if (_lotteryData.TotalSummons >= 100)
+            if (_lotteryData.SummonsSinceLastGold >= 100)
             {
-                // Nach 100 Summons: +1%
                 chance += 1.0;
-
-                // Für jeden weiteren 10er Block: +1%
-                int additionalBlocks = (_lotteryData.TotalSummons - 100) / 10;
+                int additionalBlocks = (_lotteryData.SummonsSinceLastGold - 100) / 10;
                 chance += additionalBlocks * 1.0;
             }
 
