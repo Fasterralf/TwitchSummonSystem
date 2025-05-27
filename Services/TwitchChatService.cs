@@ -49,6 +49,15 @@ namespace TwitchSummonSystem.Services
                 _client.OnDisconnected += OnDisconnected; 
 
                 _client.Connect();
+
+                Task.Run(async () =>
+                {
+                    await Task.Delay(2000);
+                    if (_client.IsConnected)
+                    {
+                        Console.WriteLine("✅ Chat Bot ist bereit für Nachrichten");
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -99,7 +108,7 @@ namespace TwitchSummonSystem.Services
         public void SendSummonResult(string username, bool isGold, int pityCount)
         {
             var lotteryData = _lotteryService.GetLotteryData();
-            var goldChance = _lotteryService.CalculateGoldChance() * 100;
+            var goldChance = lotteryData.CurrentGoldChance; 
 
             if (isGold)
             {
@@ -110,6 +119,7 @@ namespace TwitchSummonSystem.Services
                 SendMessage($"❌ @{username} No gold. Chance: {goldChance:F1}% | Summons: {lotteryData.TotalSummons} | Golds: {lotteryData.TotalGolds}");
             }
         }
+
 
         private void SendMessage(string message)
         {

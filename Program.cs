@@ -27,6 +27,10 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Chat Service sofort initialisieren
+var chatService = app.Services.GetRequiredService<TwitchChatService>();
+Console.WriteLine("🚀 Chat Service wird initialisiert...");
+
 // Middleware konfigurieren
 app.UseCors("AllowAll");
 app.UseStaticFiles();

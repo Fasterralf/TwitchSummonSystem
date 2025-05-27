@@ -40,7 +40,7 @@ namespace TwitchSummonSystem.Services
 
             // Prüfen ob es unser Summon Reward ist
             var summonRewardName = _configuration["Twitch:SummonRewardName"];
-            if (rewardTitle.Contains(summonRewardName) || rewardTitle.ToLower().Contains("test"))
+            if (rewardTitle.Contains(summonRewardName) || rewardTitle.Contains("test", StringComparison.CurrentCultureIgnoreCase))
             {
                 // Summon ausführen
                 var result = _lotteryService.PerformSummon(username);

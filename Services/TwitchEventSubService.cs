@@ -128,15 +128,15 @@ namespace TwitchSummonSystem.Services
 
                 var summonRewardName = _configuration["Twitch:SummonRewardName"];
                 if (rewardTitle?.ToLower() == summonRewardName?.ToLower() ||
-                    rewardTitle?.ToLower().Contains("test") == true)
+                    rewardTitle?.ToLower().Contains("test", StringComparison.CurrentCultureIgnoreCase) == true)
                 {
                     var result = _lotteryService.PerformSummon(username);
                     await _hubContext.Clients.All.SendAsync("SummonResult", result);
 
                     _chatService.SendSummonResult(username, result.IsGold, result.PityCount);
 
-
-                    Console.WriteLine($"🎲 {username}: {(result.IsGold ? "⭐ GOLD!" : "❌ Kein Gold")} - Pity: {result.PityCount}/80");
+                    var lotteryData = _lotteryService.GetLotteryData();
+                    Console.WriteLine($"🎲 {username}: {(result.IsGold ? "⭐ GOLD!" : "❌ Kein Gold")} - Chance: {lotteryData.CurrentGoldChance:F1}%");
 
                     return result;
                 }
@@ -150,6 +150,7 @@ namespace TwitchSummonSystem.Services
                 return null;
             }
         }
+
 
         private string GenerateWebhookSecret()
         {
