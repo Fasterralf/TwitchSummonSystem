@@ -213,17 +213,18 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ Username: 'AdminTest' })
                 });
-
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
-
                 const data = await response.json();
                 console.log('Summon Response:', data);
 
                 if (data.success && data.result) {
                     const result = data.result;
-                    log(`🎲 Summon: ${result.IsGold ? '⭐ GOLD!' : '❌ Kein Gold'} - Chance: ${result.GoldChance.toFixed(1)}%`);
+
+                    const goldChance = result.GoldChance || result.goldChance || result.CurrentGoldChance || result.currentGoldChance || 0;
+
+                    log(`🎲 Summon: ${result.IsGold || result.isGold ? '⭐ GOLD!' : '❌ Kein Gold'} - Chance: ${goldChance.toFixed(1)}%`);
                     setTimeout(loadStats, 1000);
                 } else {
                     log(`❌ Summon fehlgeschlagen: ${JSON.stringify(data)}`);
@@ -233,6 +234,7 @@
                 console.error('Summon Error:', error);
             }
         }
+
 
         async function simulateCustomSummon() {
             const username = document.getElementById('testUsername').value || 'TestUser';
