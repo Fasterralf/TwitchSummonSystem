@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TwitchSummonSystem")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ec739a6524ae5871ca2508192a40bbca05899036")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d3d2194c5fe59f0bf6e2fc65199b0988feb2b178")]
 [assembly: System.Reflection.AssemblyProductAttribute("TwitchSummonSystem")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TwitchSummonSystem")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

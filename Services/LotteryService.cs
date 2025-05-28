@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.SignalR;
 using TwitchSummonSystem.Hubs;
+using System.Data.SqlTypes;
 
 namespace TwitchSummonSystem.Services
 {
@@ -10,10 +11,12 @@ namespace TwitchSummonSystem.Services
         private readonly string _dataFilePath = "lottery_data.json";
         private readonly IHubContext<SummonHub> _hubContext;
         private LotteryData _lotteryData;
+        private readonly DiscordService _discordService;
 
-        public LotteryService(IHubContext<SummonHub> hubContext)
+        public LotteryService(IHubContext<SummonHub> hubContext, DiscordService discordService)
         {
             _hubContext = hubContext;
+            _discordService = discordService;
             LoadLotteryData();
         }
 
@@ -48,7 +51,24 @@ namespace TwitchSummonSystem.Services
             {
                 _lotteryData.TotalGolds++;
                 _lotteryData.CurrentGoldChance = _lotteryData.BaseGoldChance;
-                _lotteryData.SummonsSinceLastGold = 0; 
+                _lotteryData.SummonsSinceLastGold = 0;
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _discordService.SendGoldNotificationAsync(
+                            username,
+                            _lotteryData.CurrentGoldChance,
+                            _lotteryData.TotalSummons,
+                            _lotteryData.TotalGolds
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Fehler beim Senden der Benachrichtigung an Discord: {ex.Message}");
+                    }
+                });
             }
 
             _lotteryData.LastSummon = DateTime.Now;
