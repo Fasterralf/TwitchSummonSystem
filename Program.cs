@@ -7,13 +7,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
 
+builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<DiscordService>();
+builder.Services.AddHttpClient<TokenService>();
+builder.Services.AddHttpClient<TwitchEventSubService>();
+
 // Unsere Services registrieren
 builder.Services.AddSingleton<LotteryService>();
 builder.Services.AddSingleton<TwitchService>();
-builder.Services.AddSingleton<DiscordService>();
 builder.Services.AddSingleton<TokenService>(); // NEU
 builder.Services.AddSingleton<TwitchChatService>(); // NEU
 builder.Services.AddSingleton<TwitchEventSubService>(); // NEU
+builder.Services.AddSingleton<DiscordService>();
 
 
 // CORS für OBS Browser Source
