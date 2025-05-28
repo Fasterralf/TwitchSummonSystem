@@ -170,7 +170,7 @@ namespace TwitchSummonSystem.Controllers
 
         public class UpdateRewardNameRequest
         {
-            public string RewardName { get; set; }
+            public string RewardName { get; set; } = null!;
         }
 
 
@@ -186,12 +186,12 @@ namespace TwitchSummonSystem.Controllers
 
     public class SetupWebhookRequest
     {
-        public string CallbackUrl { get; set; }
+        public string CallbackUrl { get; set; } = null!;
     }
 
     public class SimulateRewardRequest
     {
-        public string Username { get; set; }
+        public string Username { get; set; } = null!;
     }
 
 }

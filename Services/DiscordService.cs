@@ -9,10 +9,10 @@ namespace TwitchSummonSystem.Services
         private readonly HttpClient _httpClient;
         private readonly string? _webhookUrl;
 
-        public DiscordService(IConfiguration configuration)
+        public DiscordService(HttpClient httpClient, IConfiguration configuration)
         {
+            _httpClient = httpClient;
             _configuration = configuration;
-            _httpClient = new HttpClient();
             _webhookUrl = _configuration["Discord:WebhookUrl"];
         }
 
@@ -34,7 +34,7 @@ namespace TwitchSummonSystem.Services
                         {
                             title = "🌟 LEGENDARY GOLD GEWONNEN! 🌟",
                             description = $"**{username}** hat Gold erhalten!",
-                            color = 16766720, // Color Gold
+                            color = 16766720, 
                             fields = new[]
                             {
                                 new

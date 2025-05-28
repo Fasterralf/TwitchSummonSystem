@@ -10,10 +10,11 @@ builder.Services.AddSignalR();
 // Unsere Services registrieren
 builder.Services.AddSingleton<LotteryService>();
 builder.Services.AddSingleton<TwitchService>();
+builder.Services.AddSingleton<DiscordService>();
 builder.Services.AddSingleton<TokenService>(); // NEU
 builder.Services.AddSingleton<TwitchChatService>(); // NEU
 builder.Services.AddSingleton<TwitchEventSubService>(); // NEU
-builder.Services.AddSingleton<DiscordService>();
+
 
 // CORS für OBS Browser Source
 builder.Services.AddCors(options =>

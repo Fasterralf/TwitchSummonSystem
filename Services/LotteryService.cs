@@ -10,8 +10,9 @@ namespace TwitchSummonSystem.Services
     {
         private readonly string _dataFilePath = "lottery_data.json";
         private readonly IHubContext<SummonHub> _hubContext;
-        private LotteryData _lotteryData;
+        private LotteryData _lotteryData = null!;
         private readonly DiscordService _discordService;
+        private readonly object _lockObject = new object();
 
         public LotteryService(IHubContext<SummonHub> hubContext, DiscordService discordService)
         {
@@ -148,8 +149,6 @@ namespace TwitchSummonSystem.Services
 
             return result;
         }
-
-
 
         private void CalculateCurrentGoldChance()
         {

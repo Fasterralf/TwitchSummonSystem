@@ -15,9 +15,9 @@ namespace TwitchSummonSystem.Services
         private readonly TokenService _tokenService;
         private readonly HttpClient _httpClient;
         private bool _isInitialized = false;
-        private string _rewardId;
+        private string _rewardId = null!;
         private string _currentRewardTitle = "test";
-        private string _configuredRewardName;
+        private string _configuredRewardName = null!;
 
 
         private readonly TwitchChatService _chatService;
@@ -150,19 +150,33 @@ namespace TwitchSummonSystem.Services
         {
             try
             {
-                var username = eventData.GetProperty("user_name").GetString();
-                var rewardTitle = eventData.GetProperty("reward").GetProperty("title").GetString();
                 var rewardCost = eventData.GetProperty("reward").GetProperty("cost").GetInt32();
+                if (!eventData.TryGetProperty("user_name", out var userNameElement) ||
+                    !eventData.TryGetProperty("reward", out var rewardElement) ||
+                    !rewardElement.TryGetProperty("title", out var titleElement))
+                {
+                    Console.WriteLine("❌ Unvollständige Event-Daten erhalten");
+                    return null!;
+                }
+
+                var username = userNameElement.GetString();
+                var rewardTitle = titleElement.GetString();
+
+                if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(rewardTitle))
+                {
+                    Console.WriteLine("❌ Username oder RewardTitle ist leer");
+                    return null!;
+                }
 
                 Console.WriteLine($"🎁 Channel Point Reward: {rewardTitle} ({rewardCost} Punkte) von {username}");
 
                 var configuredRewardName = GetCurrentSummonRewardName();
                 if (rewardTitle?.Equals(configuredRewardName, StringComparison.OrdinalIgnoreCase) == true)
                 {
-                    var result = _lotteryService.PerformSummon(username);
+                    var result = _lotteryService.PerformSummon(username!);
                     await _hubContext.Clients.All.SendAsync("SummonResult", result);
 
-                    _chatService.SendSummonResult(username, result.IsGold, result.PityCount);
+                    _chatService.SendSummonResult(username!, result.IsGold, result.PityCount);
 
                     var lotteryData = _lotteryService.GetLotteryData();
                     Console.WriteLine($"🎲 {username}: {(result.IsGold ? "⭐ GOLD!" : "❌ Kein Gold")} - Chance: {lotteryData.CurrentGoldChance:F1}%");
@@ -171,12 +185,12 @@ namespace TwitchSummonSystem.Services
                 }
 
                 Console.WriteLine($"ℹ️ Kein Summon Reward: {rewardTitle} (erwartet: {configuredRewardName})");
-                return null;
+                return null!;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Fehler bei Channel Point Redemption: {ex.Message}");
-                return null;
+                return null!;
             }
         }
 
@@ -219,20 +233,20 @@ namespace TwitchSummonSystem.Services
                             {
                                 Console.WriteLine($"✅ Summon Reward gefunden: {title} (ID: {id})");
                                 _currentRewardTitle = title;
-                                _rewardId = id; // WICHTIG: Setze die _rewardId hier!
-                                return id;
+                                _rewardId = id!; // WICHTIG: Setze die _rewardId hier!
+                                return id!;
                             }
                         }
                     }
                 }
 
                 Console.WriteLine("❌ Summon Reward nicht gefunden");
-                return null;
+                return null!;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Fehler beim Suchen des Rewards: {ex.Message}");
-                return null;
+                return null!;
             }
         }
 
@@ -343,27 +357,25 @@ namespace TwitchSummonSystem.Services
 
                             if (title?.Equals(rewardName, StringComparison.OrdinalIgnoreCase) == true)
                             {
-                                return id;
+                                return id!;
                             }
                         }
                     }
                 }
-                return null;
+                return null!;
             }
             catch
             {
-                return null;
+                return null!;
             }
         }
-
-
 
         public string GetCurrentRewardTitle()
         {
             return _currentRewardTitle;
         }
 
-        private string GenerateWebhookSecret()
+        private static string GenerateWebhookSecret()
         {
             return Guid.NewGuid().ToString("N")[..16];
         }

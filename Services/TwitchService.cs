@@ -19,7 +19,7 @@ namespace TwitchSummonSystem.Services
             _configuration = configuration;
             _twitchApi = new TwitchAPI();
 
-            InitializeAsync();
+            _ = InitializeAsync();
         }
 
         private async Task InitializeAsync()
@@ -32,6 +32,8 @@ namespace TwitchSummonSystem.Services
 
             Console.WriteLine("✅ Twitch Service für ArabNP initialisiert");
             Console.WriteLine($"📺 Kanal: {_configuration["Twitch:ChannelName"]}");
+
+            await Task.CompletedTask;
         }
 
         public async Task<SummonResult> HandleChannelPointReward(string username, string rewardTitle)
@@ -40,7 +42,7 @@ namespace TwitchSummonSystem.Services
 
             // Prüfen ob es unser Summon Reward ist
             var summonRewardName = _configuration["Twitch:SummonRewardName"];
-            if (rewardTitle.Contains(summonRewardName) || rewardTitle.Contains("test", StringComparison.CurrentCultureIgnoreCase))
+            if (rewardTitle.Contains(summonRewardName!) || rewardTitle.Contains("test", StringComparison.CurrentCultureIgnoreCase))
             {
                 // Summon ausführen
                 var result = _lotteryService.PerformSummon(username);
@@ -53,7 +55,7 @@ namespace TwitchSummonSystem.Services
                 return result;
             }
 
-            return null;
+            return null!;
         }
 
         public string GetChannelInfo()

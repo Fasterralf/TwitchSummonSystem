@@ -11,7 +11,7 @@ namespace TwitchSummonSystem.Services
     {
         private readonly IConfiguration _configuration;
         private readonly LotteryService _lotteryService;
-        private TwitchClient _client;
+        private TwitchClient _client = null!;
 
         public TwitchChatService(IConfiguration configuration, LotteryService lotteryService)
         {
@@ -65,22 +65,22 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-        private void OnConnected(object sender, OnConnectedArgs e)
+        private void OnConnected(object? sender, OnConnectedArgs e)
         {
             Console.WriteLine("✅ Chat Bot verbunden!");
         }
 
-        private void OnJoinedChannel(object sender, OnJoinedChannelArgs e)
+        private void OnJoinedChannel(object? sender, OnJoinedChannelArgs e)
         {
             Console.WriteLine($"✅ Chat Bot ist Kanal {e.Channel} beigetreten");
         }
 
-        private void OnDisconnected(object sender, OnDisconnectedEventArgs e)
+        private void OnDisconnected(object? sender, OnDisconnectedEventArgs e)
         {
             Console.WriteLine("❌ Chat Bot getrennt");
         }
 
-        private void OnMessageReceived(object sender, OnMessageReceivedArgs e)
+        private void OnMessageReceived(object? sender, OnMessageReceivedArgs e)
         {
             var message = e.ChatMessage.Message.ToLower();
             var username = e.ChatMessage.Username;
