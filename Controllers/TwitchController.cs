@@ -108,6 +108,27 @@ namespace TwitchSummonSystem.Controllers
             }
         }
 
+        [HttpPost("simulate-force-gold")]
+        public async Task<ActionResult> SimulateForceGold([FromBody] SimulateRewardRequest request)
+        {
+            try
+            {
+                var result = _lotteryService.PerformForceGoldSummon(request.Username ?? "ForceGoldTest");
+
+                await _hubContext.Clients.All.SendAsync("SummonResult", result);
+
+                Console.WriteLine($"⭐ FORCE GOLD - {request.Username}: GOLD GARANTIERT!");
+
+                return Ok(new { success = true, result });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Force Gold Fehler: {ex.Message}");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+
         private bool VerifyWebhookSignature(string body)
         {
             var signature = Request.Headers["Twitch-Eventsub-Message-Signature"].FirstOrDefault();

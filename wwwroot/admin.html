@@ -132,6 +132,7 @@
         <button class="button danger" onclick="resetLottery()">🔄 Lottery Reset</button>
         <button class="button" onclick="loadStats()">📊 Stats laden</button>
         <button class="button" onclick="openOBS()">📺 OBS Overlay öffnen</button>
+        <button class="button success" onclick="forceGoldSummon()">⭐ Force Gold Test</button>
     </div>
 
     <!-- Stats -->
@@ -279,6 +280,33 @@
 
             } catch (error) {
                 log(`❌ Lottery Reset Fehler: ${error.message}`);
+            }
+        }
+
+        async function forceGoldSummon() {
+            try {
+                log('⭐ Force Gold Summon...');
+                const response = await fetch('/api/twitch/simulate-force-gold', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Username: 'ForceGoldAdmin' })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.result) {
+                    log(`⭐ FORCE GOLD: Garantiertes Gold für ${data.result.Username}!`);
+                    setTimeout(loadStats, 1000);
+                } else {
+                    log(`❌ Force Gold fehlgeschlagen: ${JSON.stringify(data)}`);
+                }
+            } catch (error) {
+                log(`❌ Force Gold Fehler: ${error.message}`);
+                console.error('Force Gold Error:', error);
             }
         }
 

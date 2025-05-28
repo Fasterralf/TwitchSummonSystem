@@ -91,6 +91,65 @@ namespace TwitchSummonSystem.Services
             return result;
         }
 
+        public SummonResult PerformForceGoldSummon(string username)
+        {
+            // Aktuelle Chance berechnen für Anzeige
+            CalculateCurrentGoldChance();
+
+            var result = new SummonResult
+            {
+                IsGold = true, // Force Gold!
+                PityCount = _lotteryData.SummonsSinceLastGold,
+                GoldChance = _lotteryData.CurrentGoldChance,
+                Timestamp = DateTime.Now,
+                Username = username
+            };
+
+            _lotteryData.TotalSummons++;
+            _lotteryData.TotalGolds++;
+            _lotteryData.CurrentGoldChance = _lotteryData.BaseGoldChance;
+            _lotteryData.SummonsSinceLastGold = 0; // Reset nach Gold
+
+            // Discord Benachrichtigung
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _discordService.SendGoldNotificationAsync(
+                        username,
+                        _lotteryData.CurrentGoldChance,
+                        _lotteryData.TotalSummons,
+                        _lotteryData.TotalGolds
+                    );
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Fehler beim Senden der Benachrichtigung an Discord: {ex.Message}");
+                }
+            });
+
+            _lotteryData.LastSummon = DateTime.Now;
+            SaveLotteryData();
+
+            // SignalR Events
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _hubContext.Clients.All.SendAsync("SummonResult", result);
+                    await _hubContext.Clients.All.SendAsync("LotteryUpdate", _lotteryData);
+                    Console.WriteLine($"📡 SignalR Events gesendet: Force Gold Summon");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ SignalR Fehler: {ex.Message}");
+                }
+            });
+
+            return result;
+        }
+
+
 
         private void CalculateCurrentGoldChance()
         {
