@@ -128,6 +128,53 @@ namespace TwitchSummonSystem.Controllers
             }
         }
 
+        [HttpPost("update-reward-title")]
+        public async Task<ActionResult> UpdateRewardTitle([FromBody] UpdateRewardTitleRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.Title))
+                {
+                    return BadRequest(new { error = "Titel darf nicht leer sein" });
+                }
+
+                if (request.Title.Length > 45)
+                {
+                    return BadRequest(new { error = "Titel zu lang (max. 45 Zeichen)" });
+                }
+
+                var success = await _eventSubService.UpdateRewardTitleAsync(request.Title);
+
+                if (success)
+                {
+                    return Ok(new { success = true, message = $"Reward Titel aktualisiert: {request.Title}" });
+                }
+                else
+                {
+                    return StatusCode(500, new { error = "Fehler beim Aktualisieren des Reward Titels" });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Update Reward Title Fehler: {ex.Message}");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [HttpGet("current-reward-title")]
+        public ActionResult GetCurrentRewardTitle()
+        {
+            try
+            {
+                var title = _eventSubService.GetCurrentRewardTitle();
+                return Ok(new { title });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
 
         private bool VerifyWebhookSignature(string body)
         {
@@ -148,5 +195,10 @@ namespace TwitchSummonSystem.Controllers
     public class SimulateRewardRequest
     {
         public string Username { get; set; }
+    }
+
+    public class UpdateRewardTitleRequest
+    {
+        public string Title { get; set; }
     }
 }

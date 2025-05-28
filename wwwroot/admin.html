@@ -167,6 +167,18 @@
         <button class="button" onclick="loadStats()">🔄 Aktualisieren</button>
     </div>
 
+    <!-- Nach der Stats Sektion -->
+    <div class="section">
+        <h2>🎮 Twitch Reward Settings</h2>
+        <div>
+            <label>Aktueller Reward Name: <span id="currentRewardTitle">-</span></label>
+            <input type="text" id="newRewardTitle" placeholder="Neuer Reward Name" maxlength="45" />
+            <button class="button" onclick="updateRewardTitle()">💾 Reward Name ändern</button>
+            <button class="button" onclick="loadCurrentRewardTitle()">🔄 Aktuellen Namen laden</button>
+        </div>
+        <div id="rewardUpdateStatus"></div>
+    </div>
+
     <!-- Test Bereich -->
     <div class="section">
         <h2>🧪 Test Bereich</h2>
@@ -188,6 +200,7 @@
     <script>
         window.onload = function () {
             loadStats();
+            loadCurrentRewardTitle();
             log('✅ Admin Panel geladen');
         };
 
@@ -236,7 +249,6 @@
             }
         }
 
-
         async function simulateCustomSummon() {
             const username = document.getElementById('testUsername').value || 'TestUser';
             try {
@@ -246,16 +258,32 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ Username: username })
                 });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
                 const data = await response.json();
-                if (data.success) {
+                console.log('Custom Summon Response:', data);
+
+                if (data.success && data.result) {
                     const result = data.result;
-                    log(`🎯 ${username}: ${result.IsGold ? '⭐ GOLD!' : '❌ Kein Gold'} - Chance: ${result.GoldChance.toFixed(1)}%`);
-                    loadStats();
+                    const goldChance = result.GoldChance || result.goldChance || result.CurrentGoldChance || result.currentGoldChance || 0.8;
+                    const isGold = result.IsGold || result.isGold || false;
+
+                    const safeGoldChance = typeof goldChance === 'number' ? goldChance : 0.8;
+
+                    log(`🎯 ${username}: ${isGold ? '⭐ GOLD!' : '❌ Kein Gold'} - Chance: ${safeGoldChance.toFixed(1)}%`);
+                    setTimeout(loadStats, 1000);
+                } else {
+                    log(`❌ Custom Summon fehlgeschlagen: ${JSON.stringify(data)}`);
                 }
             } catch (error) {
                 log(`❌ Custom Summon Fehler: ${error.message}`);
+                console.error('Custom Summon Error:', error);
             }
         }
+
 
         async function testMultipleSummons() {
             log('🎲 Starte 10x Test Summons...');
@@ -276,7 +304,7 @@
 
                 setTimeout(() => {
                     loadStats();
-                }, 500); 
+                }, 500);
 
             } catch (error) {
                 log(`❌ Lottery Reset Fehler: ${error.message}`);
@@ -342,6 +370,56 @@
             } catch (error) {
                 log(`❌ Stats Fehler: ${error.message}`);
                 console.error('Stats Error:', error);
+            }
+        }
+
+        async function updateRewardTitle() {
+            const newTitle = document.getElementById('newRewardTitle').value.trim();
+
+            if (!newTitle) {
+                log('❌ Reward Name darf nicht leer sein');
+                return;
+            }
+
+            if (newTitle.length > 45) {
+                log('❌ Reward Name zu lang (max. 45 Zeichen)');
+                return;
+            }
+
+            try {
+                log(`🎮 Aktualisiere Reward Name zu: "${newTitle}"...`);
+
+                const response = await fetch('/api/twitch/update-reward-title', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Title: newTitle })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    log(`✅ Reward Name erfolgreich geändert: "${newTitle}"`);
+                    document.getElementById('currentRewardTitle').textContent = newTitle;
+                    document.getElementById('newRewardTitle').value = '';
+                } else {
+                    log(`❌ Fehler beim Ändern des Reward Names: ${data.error}`);
+                }
+            } catch (error) {
+                log(`❌ Reward Update Fehler: ${error.message}`);
+            }
+        }
+
+        async function loadCurrentRewardTitle() {
+            try {
+                const response = await fetch('/api/twitch/current-reward-title');
+                const data = await response.json();
+
+                if (data.title) {
+                    document.getElementById('currentRewardTitle').textContent = data.title;
+                    log(`📋 Aktueller Reward Name: "${data.title}"`);
+                }
+            } catch (error) {
+                log(`❌ Fehler beim Laden des Reward Names: ${error.message}`);
             }
         }
 

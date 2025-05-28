@@ -3,6 +3,7 @@ using TwitchSummonSystem.Hubs;
 using TwitchSummonSystem.Models;
 using System.Text.Json;
 using System.Text;
+using System.Globalization;
 
 namespace TwitchSummonSystem.Services
 {
@@ -14,6 +15,8 @@ namespace TwitchSummonSystem.Services
         private readonly TokenService _tokenService;
         private readonly HttpClient _httpClient;
         private bool _isInitialized = false;
+        private string _rewardId;
+        private string _currentRewardTitle = "test";
 
         private readonly TwitchChatService _chatService;
 
@@ -151,6 +154,111 @@ namespace TwitchSummonSystem.Services
             }
         }
 
+        public async Task<bool> UpdateRewardTitleAsync(string newTitle)
+        {
+            if (!await EnsureInitializedAsync())
+            {
+                return false;
+            }
+
+            try
+            {
+                // Erst den Reward finden
+                if (string.IsNullOrEmpty(_rewardId))
+                {
+                    var rewardId = await FindSummonRewardIdAsync();
+                    if (string.IsNullOrEmpty(rewardId))
+                    {
+                        Console.WriteLine("❌ Summon Reward nicht gefunden");
+                        return false;
+                    }
+                    _rewardId = rewardId;
+                }
+
+                var channelId = _configuration["Twitch:ChannelId"];
+
+                var updateData = new
+                {
+                    title = newTitle
+                };
+
+                var json = JsonSerializer.Serialize(updateData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var url = $"https://api.twitch.tv/helix/channel_points/custom_rewards?broadcaster_id={channelId}&id={_rewardId}";
+
+                var response = await _httpClient.PatchAsync(url, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"📡 Update Reward Response: {response.StatusCode}");
+                Console.WriteLine($"📄 Response: {responseContent}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _currentRewardTitle = newTitle;
+                    Console.WriteLine($"✅ Reward Titel aktualisiert: {newTitle}");
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Fehler beim Aktualisieren des Reward Titels: {response.StatusCode}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception beim Aktualisieren des Reward Titels: {ex.Message}");
+                return false;
+            }
+        }
+
+        private async Task<string> FindSummonRewardIdAsync()
+        {
+            try
+            {
+                var channelId = _configuration["Twitch:ChannelId"];
+                var response = await _httpClient.GetAsync($"https://api.twitch.tv/helix/channel_points/custom_rewards?broadcaster_id={channelId}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var rewardsData = JsonSerializer.Deserialize<JsonElement>(content);
+
+                    if (rewardsData.TryGetProperty("data", out var rewards))
+                    {
+                        foreach (var reward in rewards.EnumerateArray())
+                        {
+                            var title = reward.GetProperty("title").GetString();
+                            var id = reward.GetProperty("id").GetString();
+
+                            // Suche nach dem aktuellen Summon Reward (case-insensitive)
+                            var summonRewardName = _configuration["Twitch:SummonRewardName"];
+                            if (title?.ToLower() == summonRewardName?.ToLower() ||
+                                title?.ToLower().Contains("test") == true ||
+                                title?.ToLower().Contains("summon") == true)
+                            {
+                                Console.WriteLine($"🎯 Summon Reward gefunden: {title} (ID: {id})");
+                                _currentRewardTitle = title;
+                                return id;
+                            }
+                        }
+                    }
+                }
+
+                Console.WriteLine("❌ Summon Reward nicht in der Liste gefunden");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Fehler beim Suchen des Rewards: {ex.Message}");
+                return null;
+            }
+        }
+
+        public string GetCurrentRewardTitle()
+        {
+            return _currentRewardTitle;
+        }
 
         private string GenerateWebhookSecret()
         {
