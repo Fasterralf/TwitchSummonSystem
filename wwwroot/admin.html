@@ -267,14 +267,16 @@
 
         async function resetLottery() {
             if (!confirm('Lottery wirklich zurücksetzen?')) return;
-
             try {
                 log('🔄 Setze Lottery zurück...');
                 const response = await fetch('/api/summon/pity/reset', { method: 'POST' });
                 const data = await response.json();
-
                 log('✅ Lottery wurde zurückgesetzt');
-                loadStats();
+
+                setTimeout(() => {
+                    loadStats();
+                }, 500); 
+
             } catch (error) {
                 log(`❌ Lottery Reset Fehler: ${error.message}`);
             }
@@ -297,22 +299,23 @@
 
                 if (summonsSinceLastGold < 100) {
                     nextBonus = `in ${100 - summonsSinceLastGold} Summons`;
-                } else {
+                } else if (summonsSinceLastGold >= 100) {
                     const bonusRounds = Math.floor((summonsSinceLastGold - 100) / 10);
                     const nextBonusAt = (bonusRounds + 1) * 10 + 100;
                     nextBonus = `in ${nextBonusAt - summonsSinceLastGold} Summons`;
                 }
 
-                document.getElementById('nextBonus').textContent = nextBonus;
+                if (summonsSinceLastGold === 0) {
+                    nextBonus = 'in 100 Summons';
+                }
 
+                document.getElementById('nextBonus').textContent = nextBonus;
                 log(`📊 Stats geladen: ${stats.totalSummons} Summons, ${(stats.currentGoldChance || 0.8).toFixed(1)}% Chance`);
             } catch (error) {
                 log(`❌ Stats Fehler: ${error.message}`);
                 console.error('Stats Error:', error);
             }
         }
-
-
 
         function openOBS() {
             window.open('/obs.html', '_blank');

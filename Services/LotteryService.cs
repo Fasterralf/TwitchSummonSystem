@@ -112,6 +112,7 @@ namespace TwitchSummonSystem.Services
             _lotteryData.CurrentGoldChance = 0.8;
             _lotteryData.TotalSummons = 0;
             _lotteryData.TotalGolds = 0;
+            _lotteryData.SummonsSinceLastGold = 0;
             SaveLotteryData();
 
             _ = Task.Run(async () =>
