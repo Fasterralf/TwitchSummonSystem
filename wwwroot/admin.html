@@ -172,6 +172,8 @@
         <h2>🎮 Twitch Reward Settings</h2>
         <div>
             <label>Aktueller Reward Name: <span id="currentRewardTitle">-</span></label>
+            <button class="button" onclick="loadAvailableRewards()">🔍 Verfügbare Rewards anzeigen</button>
+            <div id="availableRewards"></div>
             <input type="text" id="newRewardTitle" placeholder="Neuer Reward Name" maxlength="45" />
             <button class="button" onclick="updateRewardTitle()">💾 Reward Name ändern</button>
             <button class="button" onclick="loadCurrentRewardTitle()">🔄 Aktuellen Namen laden</button>
@@ -422,6 +424,28 @@
                 log(`❌ Fehler beim Laden des Reward Names: ${error.message}`);
             }
         }
+
+        async function loadAvailableRewards() {
+            try {
+                const response = await fetch('/api/twitch/available-rewards');
+                const data = await response.json();
+
+                const container = document.getElementById('availableRewards');
+                if (data.rewards && data.rewards.length > 0) {
+                    let html = '<h4>📋 Verfügbare Rewards:</h4><ul>';
+                    data.rewards.forEach(reward => {
+                        html += `<li>${reward.title} (${reward.cost} Punkte) - ${reward.is_enabled ? '✅' : '❌'}</li>`;
+                    });
+                    html += '</ul>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p>❌ Keine Rewards gefunden oder Token-Problem</p>';
+                }
+            } catch (error) {
+                log(`❌ Fehler beim Laden der Rewards: ${error.message}`);
+            }
+        }
+
 
         function openOBS() {
             window.open('/obs.html', '_blank');
