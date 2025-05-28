@@ -2,69 +2,15 @@
 <html>
 <head>
     <title>Twitch Summon System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
         body {
             background: transparent;
-            font-family: 'Arial Black', Arial, sans-serif;
+            font-family: 'Montserrat', sans-serif;
             margin: 0;
             padding: 20px;
             color: white;
             overflow: hidden;
-        }
-
-        .summon-result {
-            text-align: center;
-            font-size: 48px;
-            font-weight: bold;
-            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
-            display: none;
-            position: relative;
-        }
-
-        .gold {
-            color: #FFD700;
-            animation: goldPulse 0.8s ease-out;
-        }
-
-            .gold::before {
-                content: '';
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                width: 200px;
-                height: 200px;
-                background: radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%);
-                border-radius: 50%;
-                transform: translate(-50%, -50%);
-                animation: auraExpand 1.2s ease-out;
-                z-index: -1;
-            }
-
-            .gold::after {
-                content: '';
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                width: 150px;
-                height: 150px;
-                border: 2px solid #FFD700;
-                border-radius: 50%;
-                transform: translate(-50%, -50%);
-                animation: ringRotate 2s linear infinite;
-                z-index: -1;
-            }
-
-        .no-gold {
-            color: #888888;
-            animation: noGoldFade 0.6s ease-in;
-        }
-
-        .sparkle {
-            position: absolute;
-            color: #FFD700;
-            font-size: 20px;
-            pointer-events: none;
-            animation: sparkleFloat 1.5s ease-out forwards;
         }
 
         .stats-counter {
@@ -76,6 +22,7 @@
             padding: 15px;
             border-radius: 10px;
             border: 2px solid #6441a5;
+            z-index: 1000;
         }
 
         .stat-line {
@@ -94,77 +41,444 @@
             font-weight: bold;
         }
 
-        @keyframes goldPulse {
+        /* Summon Effect Styles */
+        #summon-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            background-color: transparent;
+            z-index: 100;
+        }
+
+        .summon-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.5s;
+            background-color: transparent;
+        }
+
+            .summon-effect.active {
+                opacity: 1;
+            }
+
+            .summon-effect.fade-out {
+                opacity: 0;
+                transition: opacity 1.5s;
+            }
+
+        .light-beam {
+            position: absolute;
+            width: 0;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+            transform: skewX(-20deg);
+            z-index: 2;
+            opacity: 0;
+        }
+
+        .summon-effect.active .light-beam {
+            animation: beam-sweep 2s ease-in-out forwards;
+        }
+
+        @keyframes beam-sweep {
             0% {
+                width: 0;
+                left: -10%;
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            50% {
+                width: 120%;
+                left: -10%;
+                opacity: 1;
+            }
+
+            100% {
+                width: 120%;
+                left: 100%;
+                opacity: 0;
+            }
+        }
+
+        .circle-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3;
+            transform: scale(0);
+        }
+
+        .summon-effect.active .circle-container {
+            animation: circle-appear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation-delay: 0.5s;
+        }
+
+        @keyframes circle-appear {
+            0% {
+                transform: scale(0);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .outer-circle, .middle-circle, .inner-circle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0;
+        }
+
+        .outer-circle {
+            width: 300px;
+            height: 300px;
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            background: radial-gradient(circle, transparent 60%, rgba(255, 255, 255, 0.05) 100%);
+        }
+
+        .middle-circle {
+            width: 220px;
+            height: 220px;
+            border: 3px solid rgba(255, 255, 255, 0.6);
+            background: radial-gradient(circle, transparent 50%, rgba(255, 255, 255, 0.08) 100%);
+        }
+
+        .inner-circle {
+            width: 150px;
+            height: 150px;
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        }
+
+        .summon-effect.active .outer-circle {
+            animation: circle-rotate 20s linear infinite, fade-in 0.5s forwards;
+            animation-delay: 0s, 0.6s;
+        }
+
+        .summon-effect.active .middle-circle {
+            animation: circle-rotate-reverse 15s linear infinite, fade-in 0.5s forwards;
+            animation-delay: 0s, 0.8s;
+        }
+
+        .summon-effect.active .inner-circle {
+            animation: circle-rotate 10s linear infinite, fade-in 0.5s forwards;
+            animation-delay: 0s, 1s;
+        }
+
+        @keyframes circle-rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes circle-rotate-reverse {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(-360deg);
+            }
+        }
+
+        @keyframes fade-in {
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .rarity-symbol {
+            position: absolute;
+            font-size: 80px;
+            color: white;
+            text-shadow: 0 0 20px currentColor;
+            opacity: 0;
+            transform: scale(0.5);
+            z-index: 4;
+        }
+
+        .summon-effect.active .rarity-symbol {
+            animation: symbol-appear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation-delay: 1.2s;
+        }
+
+        @keyframes symbol-appear {
+            0% {
+                opacity: 0;
                 transform: scale(0.5);
-                opacity: 0;
-                text-shadow: 0 0 20px #FFD700;
-            }
-
-            50% {
-                transform: scale(1.2);
-                text-shadow: 0 0 30px #FFD700, 0 0 40px #FFD700;
             }
 
             100% {
+                opacity: 1;
                 transform: scale(1);
-                opacity: 1;
-                text-shadow: 3px 3px 6px rgba(0,0,0,0.8), 0 0 20px #FFD700;
             }
         }
 
-        @keyframes auraExpand {
-            0% {
-                transform: translate(-50%, -50%) scale(0);
-                opacity: 1;
-            }
+        .energy-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
 
-            100% {
-                transform: translate(-50%, -50%) scale(1);
+        .energy-particle {
+            position: absolute;
+            width: 4px;
+            height: 40px;
+            background: currentColor;
+            border-radius: 2px;
+            opacity: 0;
+            transform-origin: center bottom;
+        }
+
+        .summon-effect.active .energy-particle {
+            animation: particle-rise 2s ease-out forwards;
+        }
+
+        @keyframes particle-rise {
+            0% {
+                transform: translateY(100px) scale(0);
                 opacity: 0;
             }
-        }
 
-        @keyframes ringRotate {
-            0% {
-                transform: translate(-50%, -50%) rotate(0deg);
+            20% {
                 opacity: 0.8;
             }
 
             100% {
-                transform: translate(-50%, -50%) rotate(360deg);
-                opacity: 0.8;
+                transform: translateY(-300px) scale(1);
+                opacity: 0;
             }
         }
 
-        @keyframes sparkleFloat {
+        .result-card {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            opacity: 0;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 15px 30px;
+            min-width: 300px;
+            text-align: center;
+            z-index: 5;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+            .result-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+                transform: translateX(-100%);
+            }
+
+        .summon-effect.active .result-card {
+            animation: card-appear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation-delay: 2s;
+        }
+
+            .summon-effect.active .result-card::before {
+                animation: card-shine 2s ease-in-out infinite;
+                animation-delay: 2.5s;
+            }
+
+        @keyframes card-appear {
             0% {
-                transform: translateY(0) scale(0);
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateX(-50%) translateY(0);
                 opacity: 1;
+            }
+        }
+
+        @keyframes card-shine {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .rarity-label {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            font-weight: 300;
+        }
+
+        .username-display {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .center-emoji {
+            position: absolute;
+            font-size: 60px;
+            opacity: 0;
+            transform: scale(0.3);
+            z-index: 6;
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        .summon-effect.active .center-emoji {
+            animation: emoji-appear 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes emoji-appear {
+            0% {
+                opacity: 0;
+                transform: scale(0.3) rotate(-180deg);
             }
 
             50% {
-                opacity: 1;
-                transform: scale(1);
-            }
-
-            100% {
-                transform: translateY(-50px) scale(0);
-                opacity: 0;
-            }
-        }
-
-        @keyframes noGoldFade {
-            0% {
-                opacity: 0;
-                transform: translateY(10px);
+                transform: scale(1.2) rotate(0deg);
             }
 
             100% {
                 opacity: 1;
-                transform: translateY(0);
+                transform: scale(1) rotate(0deg);
             }
         }
+
+        /* Gold Summon Style */
+        .gold {
+            --main-color: #ffd700;
+            --glow-color: rgba(255, 215, 0, 0.7);
+        }
+
+            .gold .outer-circle {
+                border-color: rgba(255, 215, 0, 0.8);
+                box-shadow: 0 0 25px rgba(255, 215, 0, 0.6), inset 0 0 20px rgba(255, 215, 0, 0.1);
+                background: radial-gradient(circle, transparent 60%, rgba(255, 215, 0, 0.1) 100%);
+            }
+
+            .gold .middle-circle {
+                border-color: rgba(255, 215, 0, 0.9);
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.7), inset 0 0 15px rgba(255, 215, 0, 0.15);
+                background: radial-gradient(circle, transparent 50%, rgba(255, 215, 0, 0.12) 100%);
+            }
+
+            .gold .inner-circle {
+                border-color: rgba(255, 215, 0, 1);
+                box-shadow: 0 0 15px rgba(255, 215, 0, 0.8), inset 0 0 10px rgba(255, 215, 0, 0.2);
+                background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, transparent 70%);
+            }
+
+            .gold .rarity-symbol, .gold .energy-particle {
+                color: #ffd700;
+            }
+
+            .gold .result-card {
+                border: 1px solid rgba(255, 215, 0, 0.3);
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+                background: linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(50, 40, 0, 0.7) 100%);
+            }
+
+            .gold .rarity-label {
+                color: #ffd700;
+                text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+            }
+
+            .gold .username-display {
+                color: white;
+                text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+            }
+
+            .gold .center-emoji {
+                filter: drop-shadow(0 0 15px #ffd700) drop-shadow(0 0 25px #ffd700);
+            }
+
+        /* No Gold Style */
+        .no-gold {
+            --main-color: #4d9de0;
+            --glow-color: rgba(77, 157, 224, 0.7);
+        }
+
+            .no-gold .outer-circle {
+                border-color: rgba(77, 157, 224, 0.8);
+                box-shadow: 0 0 25px rgba(77, 157, 224, 0.6), inset 0 0 20px rgba(77, 157, 224, 0.1);
+                background: radial-gradient(circle, transparent 60%, rgba(77, 157, 224, 0.1) 100%);
+            }
+
+            .no-gold .middle-circle {
+                border-color: rgba(77, 157, 224, 0.9);
+                box-shadow: 0 0 20px rgba(77, 157, 224, 0.7), inset 0 0 15px rgba(77, 157, 224, 0.15);
+                background: radial-gradient(circle, transparent 50%, rgba(77, 157, 224, 0.12) 100%);
+            }
+
+            .no-gold .inner-circle {
+                border-color: rgba(77, 157, 224, 1);
+                box-shadow: 0 0 15px rgba(77, 157, 224, 0.8), inset 0 0 10px rgba(77, 157, 224, 0.2);
+                background: radial-gradient(circle, rgba(77, 157, 224, 0.15) 0%, transparent 70%);
+            }
+
+            .no-gold .rarity-symbol, .no-gold .energy-particle {
+                color: #4d9de0;
+            }
+
+            .no-gold .result-card {
+                border: 1px solid rgba(77, 157, 224, 0.3);
+                box-shadow: 0 0 20px rgba(77, 157, 224, 0.3);
+                background: linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 30, 50, 0.7) 100%);
+            }
+
+            .no-gold .rarity-label {
+                color: #a2d2ff;
+                text-shadow: 0 0 10px rgba(77, 157, 224, 0.7);
+            }
+
+            .no-gold .username-display {
+                color: white;
+                text-shadow: 0 0 10px rgba(77, 157, 224, 0.7);
+            }
+
+            .no-gold .center-emoji {
+                filter: drop-shadow(0 0 15px #4d9de0) drop-shadow(0 0 25px #4d9de0);
+            }
+
     </style>
 </head>
 <body>
@@ -187,10 +501,7 @@
         </div>
     </div>
 
-    <div id="summonResult" class="summon-result">
-        <div id="resultText"></div>
-        <div id="username" style="font-size: 24px; margin-top: 10px;"></div>
-    </div>
+    <div id="summon-container"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
     <script>
@@ -218,64 +529,105 @@
             updateStatsFromLotteryData(lotteryData);
         });
 
-        function createSparkles() {
-            const sparkleSymbols = ['✨', '⭐', '💫', '🌟'];
-            const resultDiv = document.getElementById('summonResult');
+        function createEnergyParticles(container, rarity) {
+            const particlesContainer = document.createElement('div');
+            particlesContainer.className = 'energy-particles';
 
-            for (let i = 0; i < 8; i++) {
-                setTimeout(() => {
-                    const sparkle = document.createElement('div');
-                    sparkle.className = 'sparkle';
-                    sparkle.textContent = sparkleSymbols[Math.floor(Math.random() * sparkleSymbols.length)];
-
-                    // Random position around the text
-                    const angle = (i / 8) * 360 + Math.random() * 45;
-                    const radius = 80 + Math.random() * 40;
-                    const x = Math.cos(angle * Math.PI / 180) * radius;
-                    const y = Math.sin(angle * Math.PI / 180) * radius;
-
-                    sparkle.style.left = `calc(50% + ${x}px)`;
-                    sparkle.style.top = `calc(50% + ${y}px)`;
-                    sparkle.style.animationDelay = `${Math.random() * 0.5}s`;
-
-                    resultDiv.appendChild(sparkle);
-
-                    // Remove sparkle after animation
-                    setTimeout(() => {
-                        if (sparkle.parentNode) {
-                            sparkle.parentNode.removeChild(sparkle);
-                        }
-                    }, 2000);
-                }, i * 100);
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'energy-particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.bottom = -Math.random() * 50 + 'px';
+                const scale = 0.5 + Math.random() * 1.5;
+                particle.style.transform = `scale(${scale})`;
+                particle.style.animationDelay = (1 + Math.random() * 3) + 's';
+                particlesContainer.appendChild(particle);
             }
+
+            container.appendChild(particlesContainer);
+        }
+
+        function showGachaEffect(rarity, username) {
+            const container = document.getElementById('summon-container');
+            const effectElement = document.createElement('div');
+            effectElement.className = `summon-effect ${rarity}`;
+
+            // Light beam effect
+            const lightBeam = document.createElement('div');
+            lightBeam.className = 'light-beam';
+            effectElement.appendChild(lightBeam);
+
+            // Circle container with rotating circles
+            const circleContainer = document.createElement('div');
+            circleContainer.className = 'circle-container';
+
+            const outerCircle = document.createElement('div');
+            outerCircle.className = 'outer-circle';
+            const middleCircle = document.createElement('div');
+            middleCircle.className = 'middle-circle';
+            const innerCircle = document.createElement('div');
+            innerCircle.className = 'inner-circle';
+
+            circleContainer.appendChild(outerCircle);
+            circleContainer.appendChild(middleCircle);
+            circleContainer.appendChild(innerCircle);
+
+            const centerEmoji = document.createElement('div');
+            centerEmoji.className = 'center-emoji';
+            if (rarity === 'gold') {
+                centerEmoji.innerHTML = '😄'; 
+            } else {
+                centerEmoji.innerHTML = '😢'; 
+            }
+            circleContainer.appendChild(centerEmoji);
+
+            effectElement.appendChild(circleContainer);
+
+            createEnergyParticles(effectElement, rarity);
+
+            // Result card
+            const resultCard = document.createElement('div');
+            resultCard.className = 'result-card';
+
+            const rarityLabel = document.createElement('div');
+            rarityLabel.className = 'rarity-label';
+            if (rarity === 'gold') {
+                rarityLabel.textContent = 'Legendärer Summon';
+            } else {
+                rarityLabel.textContent = 'Normaler Summon';
+            }
+
+            const usernameElement = document.createElement('div');
+            usernameElement.className = 'username-display';
+            usernameElement.textContent = username;
+
+            resultCard.appendChild(rarityLabel);
+            resultCard.appendChild(usernameElement);
+            effectElement.appendChild(resultCard);
+
+            container.appendChild(effectElement);
+
+            // Activate animation
+            setTimeout(() => {
+                effectElement.classList.add('active');
+            }, 100);
+
+            // Fade out and remove
+            setTimeout(() => {
+                effectElement.classList.add('fade-out');
+                effectElement.classList.remove('active');
+                setTimeout(() => {
+                    if (container.contains(effectElement)) {
+                        container.removeChild(effectElement);
+                    }
+                }, 1500);
+            }, 5000);
         }
 
         function showSummonResult(result) {
-            const resultDiv = document.getElementById('summonResult');
-            const resultText = document.getElementById('resultText');
-            const username = document.getElementById('username');
-
-            // Clear previous sparkles
-            const oldSparkles = resultDiv.querySelectorAll('.sparkle');
-            oldSparkles.forEach(sparkle => sparkle.remove());
-
-            if (result.IsGold || result.isGold) {
-                resultText.textContent = "⭐ GOLD! ⭐";
-                resultDiv.className = "summon-result gold";
-
-                // Create sparkle effect
-                setTimeout(() => createSparkles(), 200);
-            } else {
-                resultText.textContent = "Kein Gold";
-                resultDiv.className = "summon-result no-gold";
-            }
-
-            username.textContent = result.Username || result.username;
-            resultDiv.style.display = 'block';
-
-            setTimeout(() => {
-                resultDiv.style.display = 'none';
-            }, 5000);
+            const rarity = (result.IsGold || result.isGold) ? 'gold' : 'no-gold';
+            const username = result.Username || result.username;
+            showGachaEffect(rarity, username);
         }
 
         function updateStatsFromLotteryData(lotteryData) {
@@ -304,6 +656,12 @@
                     document.getElementById('goldChance').textContent = '0.8%';
                 });
         }
+
+        /* Test functions (remove in production)
+        document.addEventListener('keydown', function (event) {
+            if (event.key === '1') showGachaEffect('no-gold', 'TestUser');
+            if (event.key === '2') showGachaEffect('gold', 'TestUser');
+        }); */
     </script>
 </body>
 </html>
