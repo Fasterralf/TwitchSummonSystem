@@ -17,6 +17,8 @@ namespace TwitchSummonSystem.Services
         private bool _isInitialized = false;
         private string _rewardId;
         private string _currentRewardTitle = "test";
+        private string _configuredRewardName;
+
 
         private readonly TwitchChatService _chatService;
 
@@ -154,9 +156,8 @@ namespace TwitchSummonSystem.Services
 
                 Console.WriteLine($"🎁 Channel Point Reward: {rewardTitle} ({rewardCost} Punkte) von {username}");
 
-                var summonRewardName = _configuration["Twitch:SummonRewardName"];
-                if (rewardTitle?.ToLower() == summonRewardName?.ToLower() ||
-                    rewardTitle?.ToLower().Contains("test", StringComparison.CurrentCultureIgnoreCase) == true)
+                var configuredRewardName = GetCurrentSummonRewardName();
+                if (rewardTitle?.Equals(configuredRewardName, StringComparison.OrdinalIgnoreCase) == true)
                 {
                     var result = _lotteryService.PerformSummon(username);
                     await _hubContext.Clients.All.SendAsync("SummonResult", result);
@@ -169,7 +170,7 @@ namespace TwitchSummonSystem.Services
                     return result;
                 }
 
-                Console.WriteLine($"ℹ️ Kein Summon Reward: {rewardTitle} (erwartet: {summonRewardName})");
+                Console.WriteLine($"ℹ️ Kein Summon Reward: {rewardTitle} (erwartet: {configuredRewardName})");
                 return null;
             }
             catch (Exception ex)
@@ -179,67 +180,7 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-        public async Task<bool> UpdateRewardTitleAsync(string newTitle)
-        {
-            var userToken = _configuration["Twitch:AccessToken"];
-            var clientId = _configuration["Twitch:ClientId"];
 
-            if (string.IsNullOrEmpty(userToken) || string.IsNullOrEmpty(clientId))
-            {
-                Console.WriteLine("❌ Fehler: Benutzer-Token oder Client-ID ist nicht konfiguriert.");
-                return false;
-            }
-
-            try
-            {
-                // VERWENDE SEPARATEN CLIENT FÜR USER TOKEN
-                using var userClient = new HttpClient();
-                userClient.DefaultRequestHeaders.Add("Client-ID", clientId);
-                userClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {userToken}");
-
-                if (string.IsNullOrEmpty(_rewardId))
-                {
-                    var rewardId = await FindSummonRewardIdAsync();
-                    if (string.IsNullOrEmpty(rewardId))
-                    {
-                        Console.WriteLine("❌ Summon Reward nicht gefunden");
-                        return false;
-                    }
-                    _rewardId = rewardId;
-                }
-
-                var channelId = _configuration["Twitch:ChannelId"];
-                var updateData = new { title = newTitle };
-                var json = JsonSerializer.Serialize(updateData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                var url = $"https://api.twitch.tv/helix/channel_points/custom_rewards?broadcaster_id={channelId}&id={_rewardId}";
-
-                // VERWENDE userClient STATT _httpClient
-                var response = await userClient.PatchAsync(url, content);
-                var responseContent = await response.Content.ReadAsStringAsync();
-
-                Console.WriteLine($"📡 Update Reward Response: {response.StatusCode}");
-                Console.WriteLine($"📄 Response: {responseContent}");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    _currentRewardTitle = newTitle;
-                    Console.WriteLine($"✅ Reward Titel aktualisiert: {newTitle}");
-                    return true;
-                }
-                else
-                {
-                    Console.WriteLine($"❌ Fehler beim Aktualisieren des Reward Titels: {response.StatusCode}");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception beim Aktualisieren des Reward Titels: {ex.Message}");
-                return false;
-            }
-        }
 
 
         private async Task<string> FindSummonRewardIdAsync()
@@ -273,10 +214,8 @@ namespace TwitchSummonSystem.Services
                             var id = reward.GetProperty("id").GetString();
                             Console.WriteLine($"🎯 Prüfe Reward: '{title}' (ID: {id})");
 
-                            var summonRewardName = _configuration["Twitch:SummonRewardName"];
-                            if (title?.Equals(summonRewardName, StringComparison.OrdinalIgnoreCase) == true ||
-                                title?.Contains("test", StringComparison.OrdinalIgnoreCase) == true ||
-                                title?.Contains("summon", StringComparison.OrdinalIgnoreCase) == true)
+                            var configuredRewardName = GetCurrentSummonRewardName();
+                            if (title?.Equals(configuredRewardName, StringComparison.OrdinalIgnoreCase) == true)
                             {
                                 Console.WriteLine($"✅ Summon Reward gefunden: {title} (ID: {id})");
                                 _currentRewardTitle = title;
@@ -344,6 +283,79 @@ namespace TwitchSummonSystem.Services
                 return new List<object>();
             }
         }
+
+        public async Task<bool> UpdateSummonRewardNameAsync(string newRewardName)
+        {
+            try
+            {
+                _configuredRewardName = newRewardName;
+
+                // Neue Reward ID finden
+                var newRewardId = await FindRewardByNameAsync(newRewardName);
+                if (newRewardId != null)
+                {
+                    _rewardId = newRewardId;
+                    _currentRewardTitle = newRewardName;
+                    Console.WriteLine($"✅ Reward Name geändert zu: '{newRewardName}' (ID: {newRewardId})");
+                    return true;
+                }
+
+                Console.WriteLine($"❌ Reward '{newRewardName}' nicht gefunden");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Fehler beim Ändern des Reward Names: {ex.Message}");
+                return false;
+            }
+        }
+
+        public string GetCurrentSummonRewardName()
+        {
+            return _configuredRewardName ?? _configuration["Twitch:SummonRewardName"] ?? "test";
+        }
+
+        private async Task<string> FindRewardByNameAsync(string rewardName)
+        {
+            // Bestehende FindSummonRewardIdAsync Logik, aber für spezifischen Namen
+            try
+            {
+                var channelId = _configuration["Twitch:ChannelId"];
+                var userToken = _configuration["Twitch:AccessToken"];
+                var clientId = _configuration["Twitch:ClientId"];
+
+                using var userClient = new HttpClient();
+                userClient.DefaultRequestHeaders.Add("Client-Id", clientId);
+                userClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {userToken}");
+
+                var response = await userClient.GetAsync($"https://api.twitch.tv/helix/channel_points/custom_rewards?broadcaster_id={channelId}");
+                var content = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var rewardsData = JsonSerializer.Deserialize<JsonElement>(content);
+                    if (rewardsData.TryGetProperty("data", out var rewards))
+                    {
+                        foreach (var reward in rewards.EnumerateArray())
+                        {
+                            var title = reward.GetProperty("title").GetString();
+                            var id = reward.GetProperty("id").GetString();
+
+                            if (title?.Equals(rewardName, StringComparison.OrdinalIgnoreCase) == true)
+                            {
+                                return id;
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
 
 
         public string GetCurrentRewardTitle()

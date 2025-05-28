@@ -128,68 +128,50 @@ namespace TwitchSummonSystem.Controllers
             }
         }
 
-        [HttpPost("update-reward-title")]
-        public async Task<ActionResult> UpdateRewardTitle([FromBody] UpdateRewardTitleRequest request)
+        [HttpPost("update-reward-name")]
+        public async Task<IActionResult> UpdateRewardName([FromBody] UpdateRewardNameRequest request)
         {
             try
             {
-                if (string.IsNullOrEmpty(request.Title))
-                {
-                    return BadRequest(new { error = "Titel darf nicht leer sein" });
-                }
-
-                if (request.Title.Length > 45)
-                {
-                    return BadRequest(new { error = "Titel zu lang (max. 45 Zeichen)" });
-                }
-
-                var success = await _eventSubService.UpdateRewardTitleAsync(request.Title);
-
+                var success = await _eventSubService.UpdateSummonRewardNameAsync(request.RewardName);
                 if (success)
                 {
-                    return Ok(new { success = true, message = $"Reward Titel aktualisiert: {request.Title}" });
+                    return Ok(new { success = true, message = $"Reward Name auf '{request.RewardName}' geändert" });
                 }
-                else
-                {
-                    return StatusCode(500, new { error = "Fehler beim Aktualisieren des Reward Titels" });
-                }
+                return BadRequest(new { success = false, error = "Reward nicht gefunden" });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Update Reward Title Fehler: {ex.Message}");
-                return StatusCode(500, new { error = ex.Message });
+                return BadRequest(new { success = false, error = ex.Message });
             }
         }
 
-        [HttpGet("current-reward-title")]
-        public ActionResult GetCurrentRewardTitle()
+        [HttpGet("current-reward-name")]
+        public IActionResult GetCurrentRewardName()
         {
-            try
-            {
-                var title = _eventSubService.GetCurrentRewardTitle();
-                return Ok(new { title });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { error = ex.Message });
-            }
+            var currentName = _eventSubService.GetCurrentSummonRewardName();
+            return Ok(new { rewardName = currentName });
         }
 
         [HttpGet("available-rewards")]
-        public async Task<ActionResult> GetAvailableRewards()
+        public async Task<IActionResult> GetAvailableRewards()
         {
             try
             {
                 var rewards = await _eventSubService.GetAllRewardsAsync();
-                return Ok(rewards);
+                return Ok(new { rewards });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Get Available Rewards Fehler: {ex.Message}");
-                return StatusCode(500, new { error = ex.Message });
+                return BadRequest(new { error = ex.Message });
             }
         }
 
+
+        public class UpdateRewardNameRequest
+        {
+            public string RewardName { get; set; }
+        }
 
 
         private bool VerifyWebhookSignature(string body)
@@ -198,8 +180,7 @@ namespace TwitchSummonSystem.Controllers
             var timestamp = Request.Headers["Twitch-Eventsub-Message-Timestamp"].FirstOrDefault();
             var messageId = Request.Headers["Twitch-Eventsub-Message-Id"].FirstOrDefault();
 
-            // Implement HMAC-SHA256 verification here
-            return true; // Simplified for now
+            return true; 
         }
     }
 
@@ -213,8 +194,4 @@ namespace TwitchSummonSystem.Controllers
         public string Username { get; set; }
     }
 
-    public class UpdateRewardTitleRequest
-    {
-        public string Title { get; set; }
-    }
 }

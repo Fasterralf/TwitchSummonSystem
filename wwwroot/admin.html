@@ -120,6 +120,37 @@
             overflow-y: auto;
             margin: 10px 0;
         }
+
+        #availableRewards {
+            margin: 15px 0;
+            padding: 15px;
+            background: #333;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+            #availableRewards ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            #availableRewards li {
+                padding: 8px 0;
+                border-bottom: 1px solid #555;
+                font-size: 14px;
+            }
+
+                #availableRewards li:last-child {
+                    border-bottom: none;
+                }
+
+            #availableRewards h4 {
+                margin-top: 0;
+                color: #6441a5;
+            }
+
     </style>
 </head>
 <body>
@@ -167,19 +198,33 @@
         <button class="button" onclick="loadStats()">🔄 Aktualisieren</button>
     </div>
 
-    <!-- Nach der Stats Sektion -->
+    <!-- ✅ VERBESSERTE Version der Reward Settings: -->
     <div class="section">
-        <h2>🎮 Twitch Reward Settings</h2>
-        <div>
-            <label>Aktueller Reward Name: <span id="currentRewardTitle">-</span></label>
-            <button class="button" onclick="loadAvailableRewards()">🔍 Verfügbare Rewards anzeigen</button>
-            <div id="availableRewards"></div>
-            <input type="text" id="newRewardTitle" placeholder="Neuer Reward Name" maxlength="45" />
-            <button class="button" onclick="updateRewardTitle()">💾 Reward Name ändern</button>
-            <button class="button" onclick="loadCurrentRewardTitle()">🔄 Aktuellen Namen laden</button>
+        <h2>🎮 Summon Reward Konfiguration</h2>
+        <div style="margin-bottom: 15px;">
+            <label>Aktuell überwachter Reward: <strong id="currentRewardName" style="color: #6441a5;">-</strong></label>
         </div>
-        <div id="rewardUpdateStatus"></div>
+
+        <div style="margin: 15px 0;">
+            <button class="button" onclick="loadAvailableRewards()">🔍 Verfügbare Rewards anzeigen</button>
+            <button class="button" onclick="loadCurrentRewardName()">🔄 Aktuellen Namen laden</button>
+        </div>
+
+        <div id="availableRewards"></div>
+
+        <div style="margin-top: 15px;">
+            <input type="text" id="newRewardName" placeholder="Exakter Reward Name zum Überwachen" />
+            <button class="button success" onclick="updateRewardName()">🎯 Reward überwachen</button>
+        </div>
+
+        <div id="rewardNameStatus"></div>
+
+        <div style="margin-top: 10px; padding: 10px; background: #444; border-radius: 5px; font-size: 14px;">
+            <strong>💡 Hinweis:</strong> Der Name muss exakt mit einem Twitch Channel Point Reward übereinstimmen.
+        </div>
     </div>
+
+
 
     <!-- Test Bereich -->
     <div class="section">
@@ -202,9 +247,14 @@
     <script>
         window.onload = function () {
             loadStats();
-            loadCurrentRewardTitle();
+            loadCurrentRewardName();
             log('✅ Admin Panel geladen');
+
+            setTimeout(() => {
+                loadAvailableRewards();
+            }, 2000);
         };
+
 
         function log(message) {
             const logDiv = document.getElementById('liveLog');
@@ -375,77 +425,81 @@
             }
         }
 
-        async function updateRewardTitle() {
-            const newTitle = document.getElementById('newRewardTitle').value.trim();
-
-            if (!newTitle) {
+        // ✅ VERBESSERTE Version:
+        async function updateRewardName() {
+            const newName = document.getElementById('newRewardName').value.trim();
+            if (!newName) {
+                showStatus('rewardNameStatus', 'Reward Name darf nicht leer sein', 'error');
                 log('❌ Reward Name darf nicht leer sein');
                 return;
             }
 
-            if (newTitle.length > 45) {
-                log('❌ Reward Name zu lang (max. 45 Zeichen)');
-                return;
-            }
-
             try {
-                log(`🎮 Aktualisiere Reward Name zu: "${newTitle}"...`);
+                log(`🎯 Ändere überwachten Reward zu: "${newName}"...`);
+                showStatus('rewardNameStatus', 'Suche Reward...', 'info');
 
-                const response = await fetch('/api/twitch/update-reward-title', {
+                const response = await fetch('/api/twitch/update-reward-name', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ Title: newTitle })
+                    body: JSON.stringify({ RewardName: newName })
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    log(`✅ Reward Name erfolgreich geändert: "${newTitle}"`);
-                    document.getElementById('currentRewardTitle').textContent = newTitle;
-                    document.getElementById('newRewardTitle').value = '';
+                    log(`✅ System überwacht jetzt Reward: "${newName}"`);
+                    showStatus('rewardNameStatus', `✅ Reward "${newName}" wird jetzt überwacht`, 'success');
+                    document.getElementById('currentRewardName').textContent = newName;
+                    document.getElementById('newRewardName').value = '';
                 } else {
-                    log(`❌ Fehler beim Ändern des Reward Names: ${data.error}`);
+                    log(`❌ Fehler: ${data.error}`);
+                    showStatus('rewardNameStatus', `❌ ${data.error}`, 'error');
                 }
             } catch (error) {
-                log(`❌ Reward Update Fehler: ${error.message}`);
+                log(`❌ Update Fehler: ${error.message}`);
+                showStatus('rewardNameStatus', `❌ Verbindungsfehler: ${error.message}`, 'error');
             }
         }
 
-        async function loadCurrentRewardTitle() {
-            try {
-                const response = await fetch('/api/twitch/current-reward-title');
-                const data = await response.json();
 
-                if (data.title) {
-                    document.getElementById('currentRewardTitle').textContent = data.title;
-                    log(`📋 Aktueller Reward Name: "${data.title}"`);
+        async function loadCurrentRewardName() {
+            try {
+                const response = await fetch('/api/twitch/current-reward-name');
+                const data = await response.json();
+                if (data.rewardName) {
+                    document.getElementById('currentRewardName').textContent = data.rewardName;
+                    log(`📋 Überwachter Reward: "${data.rewardName}"`);
                 }
             } catch (error) {
-                log(`❌ Fehler beim Laden des Reward Names: ${error.message}`);
+                log(`❌ Fehler beim Laden: ${error.message}`);
             }
         }
 
         async function loadAvailableRewards() {
             try {
+                log('🔍 Lade verfügbare Rewards...');
                 const response = await fetch('/api/twitch/available-rewards');
                 const data = await response.json();
 
-                const container = document.getElementById('availableRewards');
+                const rewardsDiv = document.getElementById('availableRewards');
                 if (data.rewards && data.rewards.length > 0) {
                     let html = '<h4>📋 Verfügbare Rewards:</h4><ul>';
                     data.rewards.forEach(reward => {
-                        html += `<li>${reward.title} (${reward.cost} Punkte) - ${reward.is_enabled ? '✅' : '❌'}</li>`;
+                        const status = reward.is_enabled ? '✅' : '❌';
+                        html += `<li>${status} <strong>${reward.title}</strong> (${reward.cost} Punkte)</li>`;
                     });
                     html += '</ul>';
-                    container.innerHTML = html;
+                    rewardsDiv.innerHTML = html;
+                    log(`✅ ${data.rewards.length} Rewards gefunden`);
                 } else {
-                    container.innerHTML = '<p>❌ Keine Rewards gefunden oder Token-Problem</p>';
+                    rewardsDiv.innerHTML = '<p>❌ Keine Rewards gefunden</p>';
+                    log('❌ Keine Rewards gefunden');
                 }
             } catch (error) {
                 log(`❌ Fehler beim Laden der Rewards: ${error.message}`);
+                document.getElementById('availableRewards').innerHTML = '<p>❌ Fehler beim Laden</p>';
             }
         }
-
 
         function openOBS() {
             window.open('/obs.html', '_blank');
