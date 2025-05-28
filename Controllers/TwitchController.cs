@@ -175,6 +175,22 @@ namespace TwitchSummonSystem.Controllers
             }
         }
 
+        [HttpGet("available-rewards")]
+        public async Task<ActionResult> GetAvailableRewards()
+        {
+            try
+            {
+                var rewards = await _eventSubService.GetAllRewardsAsync();
+                return Ok(rewards);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Get Available Rewards Fehler: {ex.Message}");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+
 
         private bool VerifyWebhookSignature(string body)
         {

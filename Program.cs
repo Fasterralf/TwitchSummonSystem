@@ -30,7 +30,14 @@ var app = builder.Build();
 
 // Chat Service sofort initialisieren
 var chatService = app.Services.GetRequiredService<TwitchChatService>();
-Console.WriteLine("🚀 Chat Service wird initialisiert...");
+var eventSubService = app.Services.GetRequiredService<TwitchEventSubService>();
+Console.WriteLine("🚀 Services werden initialisiert...");
+
+_ = Task.Run(async () =>
+{
+    await Task.Delay(2000); // Kurz warten
+    await eventSubService.InitializeRewardAsync();
+});
 
 // Middleware konfigurieren
 app.UseCors("AllowAll");

@@ -58,6 +58,31 @@ namespace TwitchSummonSystem.Services
             }
         }
 
+        public async Task InitializeRewardAsync()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_rewardId))
+                {
+                    var rewardId = await FindSummonRewardIdAsync();
+                    if (!string.IsNullOrEmpty(rewardId))
+                    {
+                        _rewardId = rewardId;
+                        Console.WriteLine($"✅ Reward ID initialisiert: {_rewardId}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("❌ Konnte Reward ID nicht finden");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Fehler bei Reward Initialisierung: {ex.Message}");
+            }
+        }
+
+
         public async Task<bool> CreateChannelPointRewardSubscription(string callbackUrl)
         {
             // Erst initialisieren
@@ -165,14 +190,9 @@ namespace TwitchSummonSystem.Services
                 return false;
             }
 
-            if (!await EnsureInitializedAsync())
-            {
-                return false;
-            }
-
             try
             {
-                
+                // VERWENDE SEPARATEN CLIENT FÜR USER TOKEN
                 using var userClient = new HttpClient();
                 userClient.DefaultRequestHeaders.Add("Client-ID", clientId);
                 userClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {userToken}");
@@ -189,18 +209,14 @@ namespace TwitchSummonSystem.Services
                 }
 
                 var channelId = _configuration["Twitch:ChannelId"];
-
-                var updateData = new
-                {
-                    title = newTitle
-                };
-
+                var updateData = new { title = newTitle };
                 var json = JsonSerializer.Serialize(updateData);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 var url = $"https://api.twitch.tv/helix/channel_points/custom_rewards?broadcaster_id={channelId}&id={_rewardId}";
 
-                var response = await _httpClient.PatchAsync(url, content);
+                // VERWENDE userClient STATT _httpClient
+                var response = await userClient.PatchAsync(url, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
                 Console.WriteLine($"📡 Update Reward Response: {response.StatusCode}");
@@ -225,6 +241,7 @@ namespace TwitchSummonSystem.Services
             }
         }
 
+
         private async Task<string> FindSummonRewardIdAsync()
         {
             try
@@ -233,14 +250,12 @@ namespace TwitchSummonSystem.Services
                 var userToken = _configuration["Twitch:AccessToken"];
                 var clientId = _configuration["Twitch:ClientId"];
 
-                // Separaten HttpClient für User Token
                 using var userClient = new HttpClient();
                 userClient.DefaultRequestHeaders.Add("Client-Id", clientId);
                 userClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {userToken}");
 
                 var response = await userClient.GetAsync($"https://api.twitch.tv/helix/channel_points/custom_rewards?broadcaster_id={channelId}&only_manageable_rewards=true");
 
-                // Debugging hinzufügen
                 Console.WriteLine($"📡 Get Rewards Response: {response.StatusCode}");
                 var content = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"📄 Rewards Response: {content}");
@@ -248,38 +263,31 @@ namespace TwitchSummonSystem.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var rewardsData = JsonSerializer.Deserialize<JsonElement>(content);
-
                     if (rewardsData.TryGetProperty("data", out var rewards))
                     {
-                        Console.WriteLine($"🔍 Gefundene Rewards: {rewards.GetArrayLength()}"); // NEU
+                        Console.WriteLine($"🔍 Gefundene Rewards: {rewards.GetArrayLength()}");
 
                         foreach (var reward in rewards.EnumerateArray())
                         {
                             var title = reward.GetProperty("title").GetString();
                             var id = reward.GetProperty("id").GetString();
+                            Console.WriteLine($"🎯 Prüfe Reward: '{title}' (ID: {id})");
 
-                            Console.WriteLine($"🎯 Prüfe Reward: '{title}' (ID: {id})"); // NEU
-
-                            // Suche nach dem aktuellen Summon Reward (case-insensitive)
                             var summonRewardName = _configuration["Twitch:SummonRewardName"];
-                            if (title?.ToLower() == summonRewardName?.ToLower() ||
-                                title?.ToLower().Contains("test") == true ||
-                                title?.ToLower().Contains("summon") == true)
+                            if (title?.Equals(summonRewardName, StringComparison.OrdinalIgnoreCase) == true ||
+                                title?.Contains("test", StringComparison.OrdinalIgnoreCase) == true ||
+                                title?.Contains("summon", StringComparison.OrdinalIgnoreCase) == true)
                             {
                                 Console.WriteLine($"✅ Summon Reward gefunden: {title} (ID: {id})");
                                 _currentRewardTitle = title;
+                                _rewardId = id; // WICHTIG: Setze die _rewardId hier!
                                 return id;
                             }
                         }
                     }
-                    else
-                    {
-                        Console.WriteLine("❌ Keine 'data' Property in Response gefunden"); // NEU
-                    }
-
                 }
 
-                Console.WriteLine("❌ Summon Reward nicht in der Liste gefunden");
+                Console.WriteLine("❌ Summon Reward nicht gefunden");
                 return null;
             }
             catch (Exception ex)
@@ -288,6 +296,7 @@ namespace TwitchSummonSystem.Services
                 return null;
             }
         }
+
 
         public async Task<List<object>> GetAllRewardsAsync()
         {
