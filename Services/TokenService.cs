@@ -110,7 +110,6 @@ namespace TwitchSummonSystem.Services
             return await RefreshUserTokenAsync();
         }
 
-        // ✅ NEU: Token aus Datei laden
         private async Task<string?> LoadUserTokenFromFileAsync()
         {
             try
@@ -120,7 +119,20 @@ namespace TwitchSummonSystem.Services
                 {
                     var json = await File.ReadAllTextAsync(tokenFilePath);
                     var tokenData = JsonSerializer.Deserialize<JsonElement>(json);
-                    return tokenData.GetProperty("AccessToken").GetString();
+
+                    var accessToken = tokenData.GetProperty("AccessToken").GetString();
+
+                    // ✅ FIX: Prüfe ob Token leer ist
+                    if (!string.IsNullOrEmpty(accessToken) && accessToken.Trim() != "")
+                    {
+                        Console.WriteLine("📁 Token aus Datei geladen");
+                        return accessToken;
+                    }
+                    else
+                    {
+                        Console.WriteLine("⚠️ Token-Datei ist leer - verwende Config");
+                        return null; // Fallback zur Config
+                    }
                 }
             }
             catch (Exception ex)
@@ -183,7 +195,6 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-        // ✅ NEU: Refresh Token aus Datei laden
         private async Task<string?> LoadRefreshTokenFromFileAsync()
         {
             try
@@ -193,7 +204,20 @@ namespace TwitchSummonSystem.Services
                 {
                     var json = await File.ReadAllTextAsync(tokenFilePath);
                     var tokenData = JsonSerializer.Deserialize<JsonElement>(json);
-                    return tokenData.GetProperty("RefreshToken").GetString();
+
+                    var refreshToken = tokenData.GetProperty("RefreshToken").GetString();
+
+                    // ✅ FIX: Prüfe ob Token leer ist
+                    if (!string.IsNullOrEmpty(refreshToken) && refreshToken.Trim() != "")
+                    {
+                        Console.WriteLine("📁 Refresh Token aus Datei geladen");
+                        return refreshToken;
+                    }
+                    else
+                    {
+                        Console.WriteLine("⚠️ Refresh Token-Datei ist leer - verwende Config");
+                        return null; // Fallback zur Config
+                    }
                 }
             }
             catch (Exception ex)
@@ -207,6 +231,13 @@ namespace TwitchSummonSystem.Services
         {
             try
             {
+                if (string.IsNullOrEmpty(token))
+                {
+                    Console.WriteLine("❌ Token ist leer oder null");
+                    _userTokenExpiry = DateTime.MinValue; // ✅ FIX: Setze Expiry zurück
+                    return false;
+                }
+
                 var clientId = _configuration["Twitch:ClientId"];
                 using var client = new HttpClient();
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
@@ -226,15 +257,18 @@ namespace TwitchSummonSystem.Services
                 else
                 {
                     Console.WriteLine($"❌ Token ungültig: {response.StatusCode}");
+                    _userTokenExpiry = DateTime.MinValue; // ✅ FIX: Setze Expiry zurück bei ungültigem Token
                     return false;
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Token Validierung fehlgeschlagen: {ex.Message}");
+                _userTokenExpiry = DateTime.MinValue; // ✅ FIX: Setze Expiry zurück bei Fehler
                 return false;
             }
         }
+
 
         private async Task StartTokenMonitoringAsync()
         {
@@ -326,28 +360,41 @@ namespace TwitchSummonSystem.Services
 
                 var userToken = await LoadUserTokenFromFileAsync() ?? _configuration["Twitch:AccessToken"];
                 var userValid = false;
+                var userExpiresAt = DateTime.MinValue;
                 var userDaysUntilExpiry = 0.0;
 
                 if (!string.IsNullOrEmpty(userToken))
                 {
                     userValid = await ValidateTokenAsync(userToken);
-                    userDaysUntilExpiry = (_userTokenExpiry - DateTime.UtcNow).TotalDays;
+
+                    // ✅ FIX: Verwende nur gültige Expiry-Daten
+                    if (userValid && _userTokenExpiry > DateTime.MinValue)
+                    {
+                        userExpiresAt = _userTokenExpiry;
+                        userDaysUntilExpiry = Math.Max(0, (_userTokenExpiry - DateTime.UtcNow).TotalDays);
+                    }
+                    else
+                    {
+                        // Token ungültig - setze Standardwerte
+                        userExpiresAt = DateTime.MinValue;
+                        userDaysUntilExpiry = 0.0;
+                    }
                 }
 
-                var appDaysUntilExpiry = (_appTokenExpiry - DateTime.UtcNow).TotalDays;
+                var appDaysUntilExpiry = Math.Max(0, (_appTokenExpiry - DateTime.UtcNow).TotalDays);
 
                 return new
                 {
                     userToken = new
                     {
                         valid = userValid,
-                        expiresAt = _userTokenExpiry,
-                        daysUntilExpiry = Math.Max(0, userDaysUntilExpiry) // Negative Werte vermeiden
+                        expiresAt = userExpiresAt,
+                        daysUntilExpiry = userDaysUntilExpiry
                     },
                     appToken = new
                     {
                         expiresAt = _appTokenExpiry,
-                        daysUntilExpiry = Math.Max(0, appDaysUntilExpiry) // Negative Werte vermeiden
+                        daysUntilExpiry = appDaysUntilExpiry
                     }
                 };
             }
@@ -370,6 +417,7 @@ namespace TwitchSummonSystem.Services
                 };
             }
         }
+
 
         // ✅ NEU: Manueller Token Refresh für Admin Panel
         public async Task<bool> ForceRefreshTokensAsync()
