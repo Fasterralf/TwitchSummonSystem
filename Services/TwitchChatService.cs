@@ -19,19 +19,20 @@ namespace TwitchSummonSystem.Services
             _configuration = configuration;
             _lotteryService = lotteryService;
             _chatTokenService = chatTokenService; // ← Neu
-            InitializeChatBot();
+            _ = Task.Run(async () => await InitializeChatBot());
+
         }
 
-
-        private void InitializeChatBot()
+        private async Task InitializeChatBot()
         {
             try
             {
                 var channelName = _configuration["Twitch:ChannelName"];
                 var botUsername = _configuration["Twitch:BotUsername"];
-                var chatToken = _configuration["Twitch:ChatOAuthToken"];
+                var chatToken = await _chatTokenService.GetChatTokenAsync(); // ← Verwende ChatTokenService
 
                 Console.WriteLine($"🤖 Initialisiere Chat Bot für Kanal: {channelName}");
+                Console.WriteLine($"🔑 Chat Token: {chatToken[..15]}...");
 
                 var clientOptions = new ClientOptions
                 {
@@ -48,11 +49,11 @@ namespace TwitchSummonSystem.Services
                 _client.OnConnected += OnConnected;
                 _client.OnJoinedChannel += OnJoinedChannel;
                 _client.OnMessageReceived += OnMessageReceived;
-                _client.OnDisconnected += OnDisconnected; 
+                _client.OnDisconnected += OnDisconnected;
 
                 _client.Connect();
 
-                Task.Run(async () =>
+                _ = Task.Run(async () =>
                 {
                     await Task.Delay(2000);
                     if (_client.IsConnected)
@@ -60,6 +61,7 @@ namespace TwitchSummonSystem.Services
                         Console.WriteLine("✅ Chat Bot ist bereit für Nachrichten");
                     }
                 });
+
             }
             catch (Exception ex)
             {

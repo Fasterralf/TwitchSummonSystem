@@ -20,30 +20,27 @@ namespace TwitchSummonSystem.Services
         {
             _configuration = configuration;
             _httpClient = new HttpClient();
-
             _ = Task.Run(StartTokenMonitoringAsync);
         }
 
         public async Task<string> GetAppAccessTokenAsync()
         {
-            if (!string.IsNullOrEmpty(_cachedAppToken) && DateTime.Now < _appTokenExpiry.AddMinutes(-5))
+            // ✅ FIX: Prüfe Cache richtig
+            if (!string.IsNullOrEmpty(_cachedAppToken) && DateTime.UtcNow < _appTokenExpiry.AddMinutes(-5))
                 return _cachedAppToken;
 
             await _rateLimitSemaphore.WaitAsync();
             try
             {
-                var timeSinceLastRequest = DateTime.Now - _lastTokenRequest;
+                var timeSinceLastRequest = DateTime.UtcNow - _lastTokenRequest;
                 if (timeSinceLastRequest < _minRequestInterval)
                 {
                     await Task.Delay(_minRequestInterval - timeSinceLastRequest);
                 }
-                _lastTokenRequest = DateTime.Now;
+                _lastTokenRequest = DateTime.UtcNow;
 
                 var clientId = _configuration["Twitch:ClientId"];
                 var clientSecret = _configuration["Twitch:ClientSecret"];
-
-                Console.WriteLine($"🔑 Verwende Client ID: {clientId}");
-                Console.WriteLine($"🔐 Client Secret vorhanden: {!string.IsNullOrEmpty(clientSecret)}");
 
                 var formData = new List<KeyValuePair<string, string>>
                 {
@@ -53,22 +50,22 @@ namespace TwitchSummonSystem.Services
                 };
 
                 var content = new FormUrlEncodedContent(formData);
-
-                Console.WriteLine("📤 Sende Token Request...");
-
                 var response = await _httpClient.PostAsync("https://id.twitch.tv/oauth2/token", content);
                 var responseContent = await response.Content.ReadAsStringAsync();
-
-                Console.WriteLine($"📡 Token Response: {response.StatusCode}");
-                Console.WriteLine($"📄 Response Body: {responseContent}");
 
                 if (response.IsSuccessStatusCode)
                 {
                     var tokenResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
                     var accessToken = tokenResponse.GetProperty("access_token").GetString()!;
+                    var expiresIn = tokenResponse.GetProperty("expires_in").GetInt32();
+
+                    // ✅ FIX: Cache richtig setzen
+                    _cachedAppToken = accessToken;
+                    _appTokenExpiry = DateTime.UtcNow.AddSeconds(expiresIn);
 
                     Console.WriteLine("✅ App Access Token erfolgreich erhalten");
-                    Console.WriteLine($"🎫 Token: {accessToken[..10]}...");
+                    Console.WriteLine($"🎫 Token: {accessToken[..10]}... (gültig bis: {_appTokenExpiry:dd.MM.yyyy HH:mm})");
+
                     return accessToken;
                 }
                 else
@@ -91,15 +88,19 @@ namespace TwitchSummonSystem.Services
         public async Task<string> GetUserAccessTokenAsync()
         {
             // Prüfe Cache
-            if (!string.IsNullOrEmpty(_cachedUserToken) && DateTime.Now < _userTokenExpiry.AddMinutes(-5))
+            if (!string.IsNullOrEmpty(_cachedUserToken) && DateTime.UtcNow < _userTokenExpiry.AddMinutes(-5))
             {
                 return _cachedUserToken;
             }
 
-            // Prüfe aktuellen Token
-            var currentToken = _configuration["Twitch:AccessToken"];
-            var isValid = await ValidateTokenAsync(currentToken!);
+            // Lade Token aus Datei (Ubuntu Server)
+            var currentToken = await LoadUserTokenFromFileAsync();
+            if (string.IsNullOrEmpty(currentToken))
+            {
+                currentToken = _configuration["Twitch:AccessToken"];
+            }
 
+            var isValid = await ValidateTokenAsync(currentToken!);
             if (isValid)
             {
                 _cachedUserToken = currentToken;
@@ -111,13 +112,35 @@ namespace TwitchSummonSystem.Services
             return await RefreshUserTokenAsync();
         }
 
+        // ✅ NEU: Token aus Datei laden
+        private async Task<string?> LoadUserTokenFromFileAsync()
+        {
+            try
+            {
+                var tokenFilePath = "/app/tokens.json";
+                if (File.Exists(tokenFilePath))
+                {
+                    var json = await File.ReadAllTextAsync(tokenFilePath);
+                    var tokenData = JsonSerializer.Deserialize<JsonElement>(json);
+                    return tokenData.GetProperty("AccessToken").GetString();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ Fehler beim Laden der Token-Datei: {ex.Message}");
+            }
+            return null;
+        }
+
         private async Task<string> RefreshUserTokenAsync()
         {
             try
             {
                 var clientId = _configuration["Twitch:ClientId"];
                 var clientSecret = _configuration["Twitch:ClientSecret"];
-                var refreshToken = _configuration["Twitch:RefreshToken"];
+
+                // Lade Refresh Token aus Datei oder Config
+                var refreshToken = await LoadRefreshTokenFromFileAsync() ?? _configuration["Twitch:RefreshToken"];
 
                 var formData = new List<KeyValuePair<string, string>>
                 {
@@ -141,11 +164,11 @@ namespace TwitchSummonSystem.Services
                     var expiresIn = tokenResponse.GetProperty("expires_in").GetInt32();
 
                     _cachedUserToken = newAccessToken;
-                    _userTokenExpiry = DateTime.Now.AddSeconds(expiresIn);
+                    _userTokenExpiry = DateTime.UtcNow.AddSeconds(expiresIn);
 
                     Console.WriteLine($"✅ User Token erneuert - gültig bis: {_userTokenExpiry:dd.MM.yyyy HH:mm}");
 
-                    // Speichere neue Token in appsettings (für Ubuntu Server)
+                    // Speichere neue Token
                     await UpdateConfigurationAsync(newAccessToken, newRefreshToken);
 
                     return newAccessToken;
@@ -163,25 +186,43 @@ namespace TwitchSummonSystem.Services
             }
         }
 
+        // ✅ NEU: Refresh Token aus Datei laden
+        private async Task<string?> LoadRefreshTokenFromFileAsync()
+        {
+            try
+            {
+                var tokenFilePath = "/app/tokens.json";
+                if (File.Exists(tokenFilePath))
+                {
+                    var json = await File.ReadAllTextAsync(tokenFilePath);
+                    var tokenData = JsonSerializer.Deserialize<JsonElement>(json);
+                    return tokenData.GetProperty("RefreshToken").GetString();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ Fehler beim Laden des Refresh Tokens: {ex.Message}");
+            }
+            return null;
+        }
+
         public async Task<bool> ValidateTokenAsync(string token)
         {
             try
             {
                 var clientId = _configuration["Twitch:ClientId"];
-
                 using var client = new HttpClient();
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
                 client.DefaultRequestHeaders.Add("Client-Id", clientId);
 
                 var response = await client.GetAsync("https://id.twitch.tv/oauth2/validate");
-
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
                     var validation = JsonSerializer.Deserialize<JsonElement>(content);
                     var expiresIn = validation.GetProperty("expires_in").GetInt32();
 
-                    _userTokenExpiry = DateTime.Now.AddSeconds(expiresIn);
+                    _userTokenExpiry = DateTime.UtcNow.AddSeconds(expiresIn);
 
                     Console.WriteLine($"✅ Token gültig für weitere {expiresIn} Sekunden ({TimeSpan.FromSeconds(expiresIn).TotalDays:F1} Tage)");
                     return true;
@@ -207,23 +248,22 @@ namespace TwitchSummonSystem.Services
             {
                 try
                 {
-                    // Prüfe alle 6 Stunden
+                    // ✅ Prüfe alle 6 Stunden
                     await Task.Delay(TimeSpan.FromHours(6));
 
-                    Console.WriteLine("🔍 Prüfe Token-Status...");
+                    Console.WriteLine("🔍 Automatische Token-Prüfung...");
 
                     // Prüfe User Token
-                    var userToken = _configuration["Twitch:AccessToken"];
+                    var userToken = await LoadUserTokenFromFileAsync() ?? _configuration["Twitch:AccessToken"];
                     var isUserTokenValid = await ValidateTokenAsync(userToken!);
 
-                    if (!isUserTokenValid)
+                    if (!isUserTokenValid || (_userTokenExpiry - DateTime.UtcNow).TotalDays < 7)
                     {
                         Console.WriteLine("⚠️ User Token läuft bald ab - erneuere...");
                         await RefreshUserTokenAsync();
                     }
 
-                    // App Token wird automatisch erneuert, keine Aktion nötig
-                    Console.WriteLine("✅ Token-Check abgeschlossen");
+                    Console.WriteLine("✅ Automatische Token-Prüfung abgeschlossen");
                 }
                 catch (Exception ex)
                 {
@@ -236,7 +276,6 @@ namespace TwitchSummonSystem.Services
         {
             try
             {
-                // Für Ubuntu Server: Schreibe in separate Token-Datei
                 var tokenData = new
                 {
                     AccessToken = newAccessToken,
@@ -245,7 +284,7 @@ namespace TwitchSummonSystem.Services
                 };
 
                 var json = JsonSerializer.Serialize(tokenData, new JsonSerializerOptions { WriteIndented = true });
-                var tokenFilePath = "/app/tokens.json"; // Pfad für Ubuntu Server
+                var tokenFilePath = "/app/tokens.json";
 
                 await File.WriteAllTextAsync(tokenFilePath, json);
                 Console.WriteLine($"💾 Token gespeichert in: {tokenFilePath}");
@@ -253,7 +292,6 @@ namespace TwitchSummonSystem.Services
                 // Update Configuration in Memory
                 _configuration["Twitch:AccessToken"] = newAccessToken;
                 _configuration["Twitch:RefreshToken"] = newRefreshToken;
-
             }
             catch (Exception ex)
             {
@@ -261,26 +299,49 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-        public async Task<TokenStatus> GetTokenStatusAsync()
+        // ✅ NEU: Für Admin Panel API
+        public async Task<object> GetTokenStatusAsync()
         {
-            var userToken = _configuration["Twitch:AccessToken"];
-            var isUserValid = await ValidateTokenAsync(userToken!);
+            var userToken = await LoadUserTokenFromFileAsync() ?? _configuration["Twitch:AccessToken"];
+            var userValid = await ValidateTokenAsync(userToken!);
 
-            return new TokenStatus
+            return new
             {
-                UserTokenValid = isUserValid,
-                UserTokenExpiry = _userTokenExpiry,
-                AppTokenExpiry = _appTokenExpiry,
-                LastCheck = DateTime.Now
+                userToken = new
+                {
+                    valid = userValid,
+                    expiresAt = _userTokenExpiry,
+                    daysUntilExpiry = (_userTokenExpiry - DateTime.UtcNow).TotalDays
+                },
+                appToken = new
+                {
+                    expiresAt = _appTokenExpiry == DateTime.MinValue ? DateTime.UtcNow.AddHours(1) : _appTokenExpiry,
+                    daysUntilExpiry = _appTokenExpiry == DateTime.MinValue ? 1 : (_appTokenExpiry - DateTime.UtcNow).TotalDays
+                }
             };
         }
-    }
 
-    public class TokenStatus
-    {
-        public bool UserTokenValid { get; set; }
-        public DateTime UserTokenExpiry { get; set; }
-        public DateTime AppTokenExpiry { get; set; }
-        public DateTime LastCheck { get; set; }
+        // ✅ NEU: Manueller Token Refresh für Admin Panel
+        public async Task<bool> ForceRefreshTokensAsync()
+        {
+            try
+            {
+                Console.WriteLine("🔄 Manueller Token-Refresh gestartet...");
+
+                // User Token erneuern
+                var newUserToken = await RefreshUserTokenAsync();
+
+                // App Token erneuern
+                _cachedAppToken = null; // Cache leeren
+                var newAppToken = await GetAppAccessTokenAsync();
+
+                return !string.IsNullOrEmpty(newUserToken) && !string.IsNullOrEmpty(newAppToken);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Manueller Token-Refresh Fehler: {ex.Message}");
+                return false;
+            }
+        }
     }
 }

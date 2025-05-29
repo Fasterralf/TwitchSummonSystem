@@ -20,47 +20,36 @@ namespace TwitchSummonSystem.Controllers
             try
             {
                 var status = await _tokenService.GetTokenStatusAsync();
-                return Ok(new
-                {
-                    userToken = new
-                    {
-                        valid = status.UserTokenValid,
-                        expiresAt = status.UserTokenExpiry,
-                        daysUntilExpiry = (status.UserTokenExpiry - DateTime.Now).TotalDays
-                    },
-                    appToken = new
-                    {
-                        expiresAt = status.AppTokenExpiry,
-                        daysUntilExpiry = (status.AppTokenExpiry - DateTime.Now).TotalDays
-                    },
-                    lastCheck = status.LastCheck
-                });
+                return Ok(status); // ← Einfach das direkt zurückgeben
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { error = ex.Message });
             }
         }
+
 
         [HttpPost("refresh")]
         public async Task<ActionResult> ForceRefreshTokens()
         {
             try
             {
-                var newUserToken = await _tokenService.GetUserAccessTokenAsync();
-                var newAppToken = await _tokenService.GetAppAccessTokenAsync();
+                var success = await _tokenService.ForceRefreshTokensAsync(); // ← Neue Methode verwenden
 
-                return Ok(new
+                if (success)
                 {
-                    message = "Token erfolgreich erneuert",
-                    userTokenUpdated = !string.IsNullOrEmpty(newUserToken),
-                    appTokenUpdated = !string.IsNullOrEmpty(newAppToken)
-                });
+                    return Ok(new { message = "Token erfolgreich erneuert" });
+                }
+                else
+                {
+                    return StatusCode(500, new { error = "Token-Refresh fehlgeschlagen" });
+                }
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { error = ex.Message });
             }
         }
+
     }
 }
