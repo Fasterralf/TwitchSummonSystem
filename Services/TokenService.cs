@@ -10,7 +10,6 @@ namespace TwitchSummonSystem.Services
         private readonly SemaphoreSlim _rateLimitSemaphore = new(1, 1);
         private DateTime _lastTokenRequest = DateTime.MinValue;
         private readonly TimeSpan _minRequestInterval = TimeSpan.FromSeconds(1);
-
         private string? _cachedAppToken;
         private DateTime _appTokenExpiry = DateTime.MinValue;
         private string? _cachedUserToken;
@@ -65,7 +64,6 @@ namespace TwitchSummonSystem.Services
 
                     Console.WriteLine("✅ App Access Token erfolgreich erhalten");
                     Console.WriteLine($"🎫 Token: {accessToken[..10]}... (gültig bis: {_appTokenExpiry:dd.MM.yyyy HH:mm})");
-
                     return accessToken;
                 }
                 else
@@ -170,7 +168,6 @@ namespace TwitchSummonSystem.Services
 
                     // Speichere neue Token
                     await UpdateConfigurationAsync(newAccessToken, newRefreshToken);
-
                     return newAccessToken;
                 }
                 else
@@ -223,7 +220,6 @@ namespace TwitchSummonSystem.Services
                     var expiresIn = validation.GetProperty("expires_in").GetInt32();
 
                     _userTokenExpiry = DateTime.UtcNow.AddSeconds(expiresIn);
-
                     Console.WriteLine($"✅ Token gültig für weitere {expiresIn} Sekunden ({TimeSpan.FromSeconds(expiresIn).TotalDays:F1} Tage)");
                     return true;
                 }
@@ -244,13 +240,23 @@ namespace TwitchSummonSystem.Services
         {
             Console.WriteLine("🔍 Token-Überwachung gestartet");
 
+            // ✅ FIX: Initialisiere App Token beim Start
+            try
+            {
+                Console.WriteLine("🔄 Initialisiere App Token beim Start...");
+                await GetAppAccessTokenAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ Fehler bei App Token Initialisierung: {ex.Message}");
+            }
+
             while (true)
             {
                 try
                 {
                     // ✅ Prüfe alle 6 Stunden
                     await Task.Delay(TimeSpan.FromHours(6));
-
                     Console.WriteLine("🔍 Automatische Token-Prüfung...");
 
                     // Prüfe User Token
@@ -261,6 +267,14 @@ namespace TwitchSummonSystem.Services
                     {
                         Console.WriteLine("⚠️ User Token läuft bald ab - erneuere...");
                         await RefreshUserTokenAsync();
+                    }
+
+                    // ✅ FIX: Prüfe auch App Token
+                    if ((_appTokenExpiry - DateTime.UtcNow).TotalHours < 12)
+                    {
+                        Console.WriteLine("⚠️ App Token läuft bald ab - erneuere...");
+                        _cachedAppToken = null; // Cache leeren
+                        await GetAppAccessTokenAsync();
                     }
 
                     Console.WriteLine("✅ Automatische Token-Prüfung abgeschlossen");
@@ -285,7 +299,6 @@ namespace TwitchSummonSystem.Services
 
                 var json = JsonSerializer.Serialize(tokenData, new JsonSerializerOptions { WriteIndented = true });
                 var tokenFilePath = "/app/tokens.json";
-
                 await File.WriteAllTextAsync(tokenFilePath, json);
                 Console.WriteLine($"💾 Token gespeichert in: {tokenFilePath}");
 
@@ -299,26 +312,63 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-        // ✅ NEU: Für Admin Panel API
+        // ✅ FIX: Verbesserte Token Status API
         public async Task<object> GetTokenStatusAsync()
         {
-            var userToken = await LoadUserTokenFromFileAsync() ?? _configuration["Twitch:AccessToken"];
-            var userValid = await ValidateTokenAsync(userToken!);
-
-            return new
+            try
             {
-                userToken = new
+                // Stelle sicher, dass App Token initialisiert ist
+                if (_appTokenExpiry == DateTime.MinValue || string.IsNullOrEmpty(_cachedAppToken))
                 {
-                    valid = userValid,
-                    expiresAt = _userTokenExpiry,
-                    daysUntilExpiry = (_userTokenExpiry - DateTime.UtcNow).TotalDays
-                },
-                appToken = new
-                {
-                    expiresAt = _appTokenExpiry == DateTime.MinValue ? DateTime.UtcNow.AddHours(1) : _appTokenExpiry,
-                    daysUntilExpiry = _appTokenExpiry == DateTime.MinValue ? 1 : (_appTokenExpiry - DateTime.UtcNow).TotalDays
+                    Console.WriteLine("🔄 App Token nicht initialisiert - hole neuen Token...");
+                    await GetAppAccessTokenAsync();
                 }
-            };
+
+                var userToken = await LoadUserTokenFromFileAsync() ?? _configuration["Twitch:AccessToken"];
+                var userValid = false;
+                var userDaysUntilExpiry = 0.0;
+
+                if (!string.IsNullOrEmpty(userToken))
+                {
+                    userValid = await ValidateTokenAsync(userToken);
+                    userDaysUntilExpiry = (_userTokenExpiry - DateTime.UtcNow).TotalDays;
+                }
+
+                var appDaysUntilExpiry = (_appTokenExpiry - DateTime.UtcNow).TotalDays;
+
+                return new
+                {
+                    userToken = new
+                    {
+                        valid = userValid,
+                        expiresAt = _userTokenExpiry,
+                        daysUntilExpiry = Math.Max(0, userDaysUntilExpiry) // Negative Werte vermeiden
+                    },
+                    appToken = new
+                    {
+                        expiresAt = _appTokenExpiry,
+                        daysUntilExpiry = Math.Max(0, appDaysUntilExpiry) // Negative Werte vermeiden
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Fehler beim Abrufen des Token Status: {ex.Message}");
+                return new
+                {
+                    userToken = new
+                    {
+                        valid = false,
+                        expiresAt = DateTime.MinValue,
+                        daysUntilExpiry = 0.0
+                    },
+                    appToken = new
+                    {
+                        expiresAt = DateTime.MinValue,
+                        daysUntilExpiry = 0.0
+                    }
+                };
+            }
         }
 
         // ✅ NEU: Manueller Token Refresh für Admin Panel
