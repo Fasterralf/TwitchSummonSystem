@@ -12,7 +12,7 @@ namespace TwitchSummonSystem.Services
         private readonly IHubContext<SummonHub> _hubContext;
         private LotteryData _lotteryData = null!;
         private readonly DiscordService _discordService;
-        private readonly object _lockObject = new object();
+        private readonly object _lockObject = new();
 
         public LotteryService(IHubContext<SummonHub> hubContext, DiscordService discordService)
         {
@@ -28,78 +28,78 @@ namespace TwitchSummonSystem.Services
 
         public SummonResult PerformSummon(string username)
         {
-            // Aktuelle Chance berechnen
-            CalculateCurrentGoldChance();
-
-            // Zufallszahl generieren
-            Random random = new Random();
-            double roll = random.NextDouble() * 100; // 0-100%
-            bool isGold = roll < _lotteryData.CurrentGoldChance;
-
-            var result = new SummonResult
+            lock (_lockObject)
             {
-                IsGold = isGold,
-                PityCount = _lotteryData.SummonsSinceLastGold, 
-                GoldChance = _lotteryData.CurrentGoldChance,
-                Timestamp = DateTime.Now,
-                Username = username
-            };
+                CalculateCurrentGoldChance();
 
-            _lotteryData.TotalSummons++;
-            _lotteryData.SummonsSinceLastGold++;
+                Random random = new();
+                double roll = random.NextDouble() * 100; 
+                bool isGold = roll < _lotteryData.CurrentGoldChance;
 
-            if (isGold)
-            {
-                _lotteryData.TotalGolds++;
-                _lotteryData.CurrentGoldChance = _lotteryData.BaseGoldChance;
-                _lotteryData.SummonsSinceLastGold = 0;
+                var result = new SummonResult
+                {
+                    IsGold = isGold,
+                    PityCount = _lotteryData.SummonsSinceLastGold,
+                    GoldChance = _lotteryData.CurrentGoldChance,
+                    Timestamp = DateTime.Now,
+                    Username = username
+                };
+
+                _lotteryData.TotalSummons++;
+                _lotteryData.SummonsSinceLastGold++;
+
+                if (isGold)
+                {
+                    _lotteryData.TotalGolds++;
+                    _lotteryData.CurrentGoldChance = _lotteryData.BaseGoldChance;
+                    _lotteryData.SummonsSinceLastGold = 0;
+
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _discordService.SendGoldNotificationAsync(
+                                username,
+                                _lotteryData.CurrentGoldChance,
+                                _lotteryData.TotalSummons,
+                                _lotteryData.TotalGolds
+                            );
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"❌ Fehler beim Senden der Benachrichtigung an Discord: {ex.Message}");
+                        }
+                    });
+                }
+
+                _lotteryData.LastSummon = DateTime.Now;
+                SaveLotteryData();
 
                 _ = Task.Run(async () =>
                 {
                     try
                     {
-                        await _discordService.SendGoldNotificationAsync(
-                            username,
-                            _lotteryData.CurrentGoldChance,
-                            _lotteryData.TotalSummons,
-                            _lotteryData.TotalGolds
-                        );
+                        await _hubContext.Clients.All.SendAsync("SummonResult", result);
+                        await _hubContext.Clients.All.SendAsync("LotteryUpdate", _lotteryData);
+                        Console.WriteLine($"📡 SignalR Events gesendet: Summon + LotteryUpdate");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"❌ Fehler beim Senden der Benachrichtigung an Discord: {ex.Message}");
+                        Console.WriteLine($"❌ SignalR Fehler: {ex.Message}");
                     }
                 });
+
+                return result;
             }
-
-            _lotteryData.LastSummon = DateTime.Now;
-            SaveLotteryData();
-
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await _hubContext.Clients.All.SendAsync("SummonResult", result);
-                    await _hubContext.Clients.All.SendAsync("LotteryUpdate", _lotteryData);
-                    Console.WriteLine($"📡 SignalR Events gesendet: Summon + LotteryUpdate");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"❌ SignalR Fehler: {ex.Message}");
-                }
-            });
-
-            return result;
         }
 
         public SummonResult PerformForceGoldSummon(string username)
         {
-            // Aktuelle Chance berechnen für Anzeige
             CalculateCurrentGoldChance();
 
             var result = new SummonResult
             {
-                IsGold = true, // Force Gold!
+                IsGold = true, 
                 PityCount = _lotteryData.SummonsSinceLastGold,
                 GoldChance = _lotteryData.CurrentGoldChance,
                 Timestamp = DateTime.Now,
@@ -109,9 +109,8 @@ namespace TwitchSummonSystem.Services
             _lotteryData.TotalSummons++;
             _lotteryData.TotalGolds++;
             _lotteryData.CurrentGoldChance = _lotteryData.BaseGoldChance;
-            _lotteryData.SummonsSinceLastGold = 0; // Reset nach Gold
+            _lotteryData.SummonsSinceLastGold = 0; 
 
-            // Discord Benachrichtigung
             _ = Task.Run(async () =>
             {
                 try
@@ -132,7 +131,6 @@ namespace TwitchSummonSystem.Services
             _lotteryData.LastSummon = DateTime.Now;
             SaveLotteryData();
 
-            // SignalR Events
             _ = Task.Run(async () =>
             {
                 try
@@ -191,7 +189,7 @@ namespace TwitchSummonSystem.Services
         public double CalculateGoldChance()
         {
             CalculateCurrentGoldChance();
-            return _lotteryData.CurrentGoldChance / 100.0; // Als Dezimalwert zurückgeben
+            return _lotteryData.CurrentGoldChance / 100.0; 
         }
 
         private void LoadLotteryData()
@@ -203,7 +201,6 @@ namespace TwitchSummonSystem.Services
                     string json = File.ReadAllText(_dataFilePath);
                     _lotteryData = JsonConvert.DeserializeObject<LotteryData>(json) ?? new LotteryData();
 
-                    // Migration: Falls alte Daten vorhanden sind
                     if (_lotteryData.BaseGoldChance == 0)
                     {
                         _lotteryData.BaseGoldChance = 0.8;

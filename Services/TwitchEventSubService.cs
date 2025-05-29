@@ -22,13 +22,18 @@ namespace TwitchSummonSystem.Services
 
         private readonly TwitchChatService _chatService;
 
-        public TwitchEventSubService(LotteryService lotteryService, IHubContext<SummonHub> hubContext, IConfiguration configuration, TokenService tokenService, TwitchChatService chatService)
+        public TwitchEventSubService
+            (LotteryService lotteryService, 
+            IHubContext<SummonHub> hubContext, 
+            IConfiguration configuration, 
+            TokenService tokenService,
+            TwitchChatService chatService)
         {
             _lotteryService = lotteryService;
             _hubContext = hubContext;
             _configuration = configuration;
             _tokenService = tokenService;
-            _chatService = chatService; // NEU
+            _chatService = chatService; 
             _httpClient = new HttpClient();
         }
 
@@ -40,7 +45,6 @@ namespace TwitchSummonSystem.Services
 
             Console.WriteLine($"🔑 Client ID: {clientId}");
 
-            // App Access Token holen
             var appAccessToken = await _tokenService.GetAppAccessTokenAsync();
 
             if (appAccessToken != null)
@@ -87,7 +91,6 @@ namespace TwitchSummonSystem.Services
 
         public async Task<bool> CreateChannelPointRewardSubscription(string callbackUrl)
         {
-            // Erst initialisieren
             if (!await EnsureInitializedAsync())
             {
                 return false;
@@ -194,16 +197,15 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-
-
-
         private async Task<string> FindSummonRewardIdAsync()
         {
             try
             {
                 var channelId = _configuration["Twitch:ChannelId"];
-                var userToken = _configuration["Twitch:AccessToken"];
+                var userToken = await _tokenService.GetUserAccessTokenAsync(); 
                 var clientId = _configuration["Twitch:ClientId"];
+
+                Console.WriteLine($"🔑 Verwende User Token für Channel Points API: {userToken?[..10]}...");
 
                 using var userClient = new HttpClient();
                 userClient.DefaultRequestHeaders.Add("Client-Id", clientId);
@@ -213,7 +215,6 @@ namespace TwitchSummonSystem.Services
 
                 Console.WriteLine($"📡 Get Rewards Response: {response.StatusCode}");
                 var content = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"📄 Rewards Response: {content}");
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -221,7 +222,6 @@ namespace TwitchSummonSystem.Services
                     if (rewardsData.TryGetProperty("data", out var rewards))
                     {
                         Console.WriteLine($"🔍 Gefundene Rewards: {rewards.GetArrayLength()}");
-
                         foreach (var reward in rewards.EnumerateArray())
                         {
                             var title = reward.GetProperty("title").GetString();
@@ -233,11 +233,16 @@ namespace TwitchSummonSystem.Services
                             {
                                 Console.WriteLine($"✅ Summon Reward gefunden: {title} (ID: {id})");
                                 _currentRewardTitle = title;
-                                _rewardId = id!; // WICHTIG: Setze die _rewardId hier!
+                                _rewardId = id!;
                                 return id!;
                             }
                         }
                     }
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    Console.WriteLine("🔄 Token ungültig - versuche Refresh...");
+                    return null!;
                 }
 
                 Console.WriteLine("❌ Summon Reward nicht gefunden");
@@ -250,13 +255,12 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-
         public async Task<List<object>> GetAllRewardsAsync()
         {
             try
             {
                 var channelId = _configuration["Twitch:ChannelId"];
-                var userToken = _configuration["Twitch:AccessToken"];
+                var userToken = await _tokenService.GetUserAccessTokenAsync(); 
                 var clientId = _configuration["Twitch:ClientId"];
 
                 using var userClient = new HttpClient();
@@ -269,7 +273,6 @@ namespace TwitchSummonSystem.Services
                 {
                     var content = await response.Content.ReadAsStringAsync();
                     var rewardsData = JsonSerializer.Deserialize<JsonElement>(content);
-
                     var rewardList = new List<object>();
 
                     if (rewardsData.TryGetProperty("data", out var rewards))
@@ -285,16 +288,14 @@ namespace TwitchSummonSystem.Services
                             });
                         }
                     }
-
                     return rewardList;
                 }
-
-                return new List<object>();
+                return [];
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Fehler beim Abrufen aller Rewards: {ex.Message}");
-                return new List<object>();
+                return [];
             }
         }
 
@@ -304,7 +305,6 @@ namespace TwitchSummonSystem.Services
             {
                 _configuredRewardName = newRewardName;
 
-                // Neue Reward ID finden
                 var newRewardId = await FindRewardByNameAsync(newRewardName);
                 if (newRewardId != null)
                 {
@@ -331,7 +331,6 @@ namespace TwitchSummonSystem.Services
 
         private async Task<string> FindRewardByNameAsync(string rewardName)
         {
-            // Bestehende FindSummonRewardIdAsync Logik, aber für spezifischen Namen
             try
             {
                 var channelId = _configuration["Twitch:ChannelId"];

@@ -13,15 +13,14 @@ namespace TwitchSummonSystem.Controllers
     public class TwitchController : ControllerBase
     {
         private readonly TwitchEventSubService _eventSubService;
-        private readonly LotteryService _lotteryService; // GEÄNDERT
-        private readonly IHubContext<SummonHub> _hubContext; // NEU
+        private readonly LotteryService _lotteryService; 
+        private readonly IHubContext<SummonHub> _hubContext; 
 
-
-        public TwitchController(TwitchEventSubService eventSubService, LotteryService lotteryService, IHubContext<SummonHub> hubContext) // GEÄNDERT
+        public TwitchController(TwitchEventSubService eventSubService, LotteryService lotteryService, IHubContext<SummonHub> hubContext) 
         {
             _eventSubService = eventSubService;
-            _lotteryService = lotteryService; // GEÄNDERT
-            _hubContext = hubContext; // NEU
+            _lotteryService = lotteryService; 
+            _hubContext = hubContext; 
         }
 
         [HttpPost("webhook")]
@@ -32,7 +31,7 @@ namespace TwitchSummonSystem.Controllers
                 using var reader = new StreamReader(Request.Body);
                 var body = await reader.ReadToEndAsync();
 
-                if (!VerifyWebhookSignature(body))
+                if (!VerifyWebhookSignature(body, GetMessageId()))
                 {
                     return Unauthorized("Invalid signature");
                 }
@@ -41,14 +40,12 @@ namespace TwitchSummonSystem.Controllers
 
                 var webhookData = JsonSerializer.Deserialize<JsonElement>(body);
                 
-                // Challenge Response für Webhook Verification
                 if (webhookData.TryGetProperty("challenge", out var challenge))
                 {
                     Console.WriteLine("🔐 Webhook Challenge erhalten");
                     return Ok(challenge.GetString());
                 }
 
-                // Event Data verarbeiten
                 if (webhookData.TryGetProperty("event", out var eventData))
                 {
                     var eventType = webhookData.GetProperty("subscription").GetProperty("type").GetString();
@@ -91,10 +88,8 @@ namespace TwitchSummonSystem.Controllers
         {
             try
             {
-                // Direkt den PityService aufrufen (ohne EventSub)
                 var result = _lotteryService.PerformSummon(request.Username ?? "TestUser");
 
-                // Live-Update an OBS senden
                 await _hubContext.Clients.All.SendAsync("SummonResult", result);
 
                 Console.WriteLine($"🎲 Simuliert - {request.Username}: {(result.IsGold ? "⭐ GOLD!" : "❌ Kein Gold")} - Pity: {result.PityCount}/80");
@@ -167,19 +162,25 @@ namespace TwitchSummonSystem.Controllers
             }
         }
 
-
         public class UpdateRewardNameRequest
         {
             public string RewardName { get; set; } = null!;
         }
 
-
-        private bool VerifyWebhookSignature(string body)
+        private string? GetMessageId()
         {
-            var signature = Request.Headers["Twitch-Eventsub-Message-Signature"].FirstOrDefault();
-            var timestamp = Request.Headers["Twitch-Eventsub-Message-Timestamp"].FirstOrDefault();
-            var messageId = Request.Headers["Twitch-Eventsub-Message-Id"].FirstOrDefault();
+            return Request.Headers["Twitch-Eventsub-Message-Id"].FirstOrDefault();
+        }
 
+        private bool VerifyWebhookSignature(string body, string? messageId)
+        {
+            if (body is null)
+            {
+                throw new ArgumentNullException(nameof(body));
+            }
+
+            var signature = Request.Headers["Twitch-Eventsub-Message-Signature"].FirstOrDefault();
+            _ = Request.Headers["Twitch-Eventsub-Message-Timestamp"].FirstOrDefault();
             return true; 
         }
     }
@@ -193,5 +194,4 @@ namespace TwitchSummonSystem.Controllers
     {
         public string Username { get; set; } = null!;
     }
-
 }

@@ -151,6 +151,35 @@
                 color: #6441a5;
             }
 
+        /* Token Dashboard Styles */
+        .token-card {
+            background: #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #6441a5;
+        }
+
+        .token-status-good {
+            border-left-color: #28a745;
+        }
+
+        .token-status-warning {
+            border-left-color: #ffc107;
+        }
+
+        .token-status-error {
+            border-left-color: #dc3545;
+        }
+
+        .auto-refresh-controls {
+            margin: 15px 0;
+            padding: 10px;
+            background: #444;
+            border-radius: 5px;
+        }
+
+
     </style>
 </head>
 <body>
@@ -165,6 +194,33 @@
         <button class="button" onclick="openOBS()">📺 OBS Overlay öffnen</button>
         <button class="button success" onclick="forceGoldSummon()">⭐ Force Gold Test</button>
     </div>
+
+    <!-- Token Dashboard -->
+    <div class="section">
+        <h2>🔑 Token Dashboard</h2>
+
+        <div class="auto-refresh-controls">
+            <label>
+                <input type="checkbox" id="autoRefreshTokens" checked>
+                Auto-Refresh (30s)
+            </label>
+            <button class="button" onclick="loadTokenStatus()">🔄 Token Status</button>
+            <button class="button success" onclick="forceRefreshTokens()">🔄 Token erneuern</button>
+        </div>
+
+        <div id="tokenStatus">
+            <div class="token-card">
+                <h4>📡 Lade Token-Status...</h4>
+            </div>
+        </div>
+
+        <div class="token-card">
+            <h4>📊 System Info</h4>
+            <p><strong>Letzte Prüfung:</strong> <span id="lastTokenUpdate">-</span></p>
+            <p><strong>Nächste Prüfung:</strong> <span id="nextTokenCheck">-</span></p>
+        </div>
+    </div>
+
 
     <!-- Stats -->
     <div class="section">
@@ -248,12 +304,18 @@
         window.onload = function () {
             loadStats();
             loadCurrentRewardName();
+            loadTokenStatus(); // ← NEU
             log('✅ Admin Panel geladen');
+
+            // Event Listener für Token Auto-Refresh
+            document.getElementById('autoRefreshTokens').addEventListener('change', toggleTokenAutoRefresh);
+            toggleTokenAutoRefresh(); // ← NEU
 
             setTimeout(() => {
                 loadAvailableRewards();
             }, 2000);
         };
+
 
 
         function log(message) {
@@ -509,6 +571,89 @@
         function clearLog() {
             document.getElementById('liveLog').innerHTML = 'Log gelöscht...<br>';
         }
+
+        // Token Dashboard Functions
+        let tokenAutoRefreshInterval;
+
+        async function loadTokenStatus() {
+            try {
+                log('🔑 Lade Token-Status...');
+                const response = await fetch('/api/token/status');
+                const data = await response.json();
+
+                document.getElementById('lastTokenUpdate').textContent = new Date().toLocaleString('de-DE');
+
+                const userDays = data.userToken.daysUntilExpiry;
+                const appDays = data.appToken.daysUntilExpiry;
+
+                let userStatus = 'token-status-good';
+                let appStatus = 'token-status-good';
+
+                if (userDays < 7) userStatus = 'token-status-warning';
+                if (userDays < 1) userStatus = 'token-status-error';
+                if (appDays < 1) appStatus = 'token-status-warning';
+
+                document.getElementById('tokenStatus').innerHTML = `
+            <div class="token-card ${userStatus}">
+                <h4>👤 User Access Token</h4>
+                <p><strong>Status:</strong> ${data.userToken.valid ? '✅ Gültig' : '❌ Ungültig'}</p>
+                <p><strong>Läuft ab:</strong> ${new Date(data.userToken.expiresAt).toLocaleString('de-DE')}</p>
+                <p><strong>Verbleibend:</strong> ${userDays.toFixed(1)} Tage</p>
+            </div>
+            
+            <div class="token-card ${appStatus}">
+                <h4>🤖 App Access Token</h4>
+                <p><strong>Läuft ab:</strong> ${new Date(data.appToken.expiresAt).toLocaleString('de-DE')}</p>
+                <p><strong>Verbleibend:</strong> ${appDays.toFixed(1)} Tage</p>
+                <p><strong>Auto-Refresh:</strong> ✅ Aktiviert</p>
+            </div>
+        `;
+
+                const nextCheck = new Date(Date.now() + 30000);
+                document.getElementById('nextTokenCheck').textContent = nextCheck.toLocaleTimeString('de-DE');
+
+                log(`✅ Token-Status geladen - User: ${userDays.toFixed(1)}d, App: ${appDays.toFixed(1)}d`);
+
+            } catch (error) {
+                document.getElementById('tokenStatus').innerHTML = `
+            <div class="token-card token-status-error">
+                <h4>❌ Fehler beim Laden</h4>
+                <p>${error.message}</p>
+            </div>
+        `;
+                log(`❌ Token-Status Fehler: ${error.message}`);
+            }
+        }
+
+        async function forceRefreshTokens() {
+            try {
+                log('🔄 Erneuere Token...');
+                const response = await fetch('/api/token/refresh', { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    log('✅ Token erfolgreich erneuert!');
+                    setTimeout(loadTokenStatus, 1000);
+                } else {
+                    log('❌ Token Refresh Fehler: ' + data.error);
+                }
+            } catch (error) {
+                log('❌ Token Refresh Fehler: ' + error.message);
+            }
+        }
+
+        function toggleTokenAutoRefresh() {
+            const checkbox = document.getElementById('autoRefreshTokens');
+
+            if (checkbox.checked) {
+                tokenAutoRefreshInterval = setInterval(loadTokenStatus, 30000);
+                log('✅ Token Auto-Refresh aktiviert (30s)');
+            } else {
+                clearInterval(tokenAutoRefreshInterval);
+                log('❌ Token Auto-Refresh deaktiviert');
+            }
+        }
+
     </script>
 </body>
 </html>

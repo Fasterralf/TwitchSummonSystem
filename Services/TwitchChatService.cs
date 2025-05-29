@@ -11,14 +11,17 @@ namespace TwitchSummonSystem.Services
     {
         private readonly IConfiguration _configuration;
         private readonly LotteryService _lotteryService;
+        private readonly ChatTokenService _chatTokenService; // ← Neu
         private TwitchClient _client = null!;
 
-        public TwitchChatService(IConfiguration configuration, LotteryService lotteryService)
+        public TwitchChatService(IConfiguration configuration, LotteryService lotteryService, ChatTokenService chatTokenService)
         {
             _configuration = configuration;
             _lotteryService = lotteryService;
+            _chatTokenService = chatTokenService; // ← Neu
             InitializeChatBot();
         }
+
 
         private void InitializeChatBot()
         {
@@ -42,7 +45,6 @@ namespace TwitchSummonSystem.Services
                 var credentials = new ConnectionCredentials(botUsername, chatToken);
                 _client.Initialize(credentials, channelName);
 
-                // Event Handler
                 _client.OnConnected += OnConnected;
                 _client.OnJoinedChannel += OnJoinedChannel;
                 _client.OnMessageReceived += OnMessageReceived;
@@ -108,18 +110,16 @@ namespace TwitchSummonSystem.Services
         public void SendSummonResult(string username, bool isGold, int pityCount)
         {
             var lotteryData = _lotteryService.GetLotteryData();
-            var goldChance = lotteryData.CurrentGoldChance; 
 
             if (isGold)
             {
-                SendMessage($"🌟✨ @{username} hat LEGENDARY GOLD erhalten! ⭐🎉 Chance war: {goldChance:F1}%! 🎊");
+                SendMessage($"🌟✨ @{username} hat LEGENDARY GOLD erhalten! ⭐🎉");
             }
             else
             {
-                SendMessage($"❌ @{username} No gold. Chance: {goldChance:F1}% | Summons: {lotteryData.TotalSummons} | Golds: {lotteryData.TotalGolds}");
+                SendMessage($"❌ @{username} No gold.");
             }
         }
-
 
         private void SendMessage(string message)
         {

@@ -8,13 +8,13 @@ namespace TwitchSummonSystem.Services
     public class TwitchService
     {
         private readonly TwitchAPI _twitchApi;
-        private readonly LotteryService _lotteryService; // GEÄNDERT
+        private readonly LotteryService _lotteryService; 
         private readonly IHubContext<SummonHub> _hubContext;
         private readonly IConfiguration _configuration;
 
         public TwitchService(LotteryService lotteryService, IHubContext<SummonHub> hubContext, IConfiguration configuration)
         {
-            _lotteryService = lotteryService; // GEÄNDERT
+            _lotteryService = lotteryService;
             _hubContext = hubContext;
             _configuration = configuration;
             _twitchApi = new TwitchAPI();
@@ -40,14 +40,11 @@ namespace TwitchSummonSystem.Services
         {
             Console.WriteLine($"🎁 Channel Point Reward: {rewardTitle} von {username}");
 
-            // Prüfen ob es unser Summon Reward ist
             var summonRewardName = _configuration["Twitch:SummonRewardName"];
             if (rewardTitle.Contains(summonRewardName!) || rewardTitle.Contains("test", StringComparison.CurrentCultureIgnoreCase))
             {
-                // Summon ausführen
                 var result = _lotteryService.PerformSummon(username);
 
-                // Live-Update an OBS
                 await _hubContext.Clients.All.SendAsync("SummonResult", result);
 
                 Console.WriteLine($"🎲 {username}: {(result.IsGold ? "⭐ GOLD!" : "❌ Kein Gold")} - Pity: {result.PityCount}/80");

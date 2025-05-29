@@ -8,11 +8,7 @@ namespace TwitchSummonSystem.Controllers
     public class ChatController : ControllerBase
     {
         private readonly LotteryService _lotteryService;
-
-        public ChatController(LotteryService lotteryService)
-        {
-            _lotteryService = lotteryService;
-        }
+        public ChatController(LotteryService lotteryService) => _lotteryService = lotteryService;
 
         [HttpGet("pity")]
         public ActionResult<string> GetPityCommand()
@@ -20,7 +16,6 @@ namespace TwitchSummonSystem.Controllers
             var lotteryData = _lotteryService.GetLotteryData();
             var goldChance = _lotteryService.CalculateGoldChance() * 100;
 
-            // Nächster Bonus berechnen
             var summonsSinceLastGold = lotteryData.SummonsSinceLastGold;
             string nextBonusText = "";
 
@@ -53,7 +48,6 @@ namespace TwitchSummonSystem.Controllers
                 (double)lotteryData.TotalGolds / lotteryData.TotalSummons * 100 : 0;
             var goldChance = _lotteryService.CalculateGoldChance() * 100;
 
-            // Nächster Bonus für Stats
             var summonsSinceLastGold = lotteryData.SummonsSinceLastGold;
             string nextBonusText = "";
 

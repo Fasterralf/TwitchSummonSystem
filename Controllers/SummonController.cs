@@ -10,12 +10,12 @@ namespace TwitchSummonSystem.Controllers
     [Route("api/[controller]")]
     public class SummonController : ControllerBase
     {
-        private readonly LotteryService _lotteryService; // GEÄNDERT
+        private readonly LotteryService _lotteryService; 
         private readonly IHubContext<SummonHub> _hubContext;
 
-        public SummonController(LotteryService lotteryService, IHubContext<SummonHub> hubContext) // GEÄNDERT
+        public SummonController(LotteryService lotteryService, IHubContext<SummonHub> hubContext) 
         {
-            _lotteryService = lotteryService; // GEÄNDERT
+            _lotteryService = lotteryService; 
             _hubContext = hubContext;
         }
 
@@ -27,32 +27,29 @@ namespace TwitchSummonSystem.Controllers
                 return BadRequest("Username ist erforderlich");
             }
 
-            // Summon durchführen
-            var result = _lotteryService.PerformSummon(request.Username); // GEÄNDERT
+            var result = _lotteryService.PerformSummon(request.Username); 
 
-            // Live-Update an OBS senden
             await _hubContext.Clients.All.SendAsync("SummonResult", result);
 
             return Ok(result);
         }
 
         [HttpGet("pity")]
-        public ActionResult<LotteryData> GetPityData() // GEÄNDERT Return Type
+        public ActionResult<LotteryData> GetPityData() 
         {
-            var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
+            var lotteryData = _lotteryService.GetLotteryData(); 
             return Ok(lotteryData);
         }
 
         [HttpPost("pity/reset")]
         public async Task<ActionResult> ResetPity()
         {
-            _lotteryService.ResetLottery(); // GEÄNDERT
-            var lotteryData = _lotteryService.GetLotteryData(); // GEÄNDERT
+            _lotteryService.ResetLottery(); 
+            var lotteryData = _lotteryService.GetLotteryData(); 
 
-            // Live-Update an OBS senden
             await _hubContext.Clients.All.SendAsync("PityReset", lotteryData);
 
-            return Ok(new { message = "Lottery wurde zurückgesetzt", lotteryData }); // GEÄNDERT
+            return Ok(new { message = "Lottery wurde zurückgesetzt", lotteryData }); 
         }
 
         [HttpGet("stats")]
@@ -64,13 +61,13 @@ namespace TwitchSummonSystem.Controllers
 
                 var stats = new
                 {
-                    TotalSummons = lotteryData.TotalSummons,
-                    TotalGolds = lotteryData.TotalGolds,
+                    lotteryData.TotalSummons,
+                    lotteryData.TotalGolds,
                     GoldRate = lotteryData.TotalSummons > 0 ?
                         (double)lotteryData.TotalGolds / lotteryData.TotalSummons * 100 : 0.0,
-                    CurrentGoldChance = lotteryData.CurrentGoldChance,
+                    lotteryData.CurrentGoldChance,
                     GoldChance = lotteryData.CurrentGoldChance,
-                    SummonsSinceLastGold = lotteryData.SummonsSinceLastGold 
+                    lotteryData.SummonsSinceLastGold 
                 };
 
                 return Ok(stats);
