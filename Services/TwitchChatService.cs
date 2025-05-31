@@ -111,17 +111,38 @@ namespace TwitchSummonSystem.Services
 
         public void SendSummonResult(string username, bool isGold, int pityCount)
         {
-            var lotteryData = _lotteryService.GetLotteryData();
+            var random = new Random();
 
             if (isGold)
             {
-                SendMessage($"🌟✨ @{username} hat LEGENDARY GOLD erhalten! ⭐🎉");
+                var goldMessages = new[]
+                {
+            $"🌟✨ LEGENDARY! ✨🌟 @{username} hat GOLD erhalten! ⭐🎉 PogChamp 🎊",
+            $"🔥⚡ AMAZING! ⚡🔥 @{username} ist der GOLD Champion! 🌟 Kreygasm 🎊⭐",
+            $"🎊🌟 INCREDIBLE! 🌟🎊 @{username} hat das LEGENDARY GOLD! ⭐✨ 5Head 🔥",
+            $"⭐🎉 FANTASTIC! 🎉⭐ @{username} hat GOLD gesummoned! 🌟💫 EZ Clap 🏆",
+            $"🔥🌟 GODLIKE! 🌟🔥 @{username} mit dem LEGENDARY Pull! ⭐ POGGERS 🎊✨",
+            $"🎊⚡ INSANE! ⚡🎊 @{username} ist ein GOLD Legend! 🌟 MonkaS 💫⭐"
+        };
+                SendMessage(goldMessages[random.Next(goldMessages.Length)]);
             }
             else
             {
-                SendMessage($"❌ @{username} No gold.");
+                var normalMessages = new[]
+                {
+            $"🎲 @{username} Normal Summon - Bis zum nächsten Stream! 💪✨ Sadge",
+            $"🎯 @{username} Kein Gold heute - Nächster Stream, neue Chance! ⭐ COPIUM",
+            $"🎮 @{username} Normal Hit - Stream Summon verbraucht! 🔥 See you next time! 👋",
+            $"🎲 @{username} Nicht heute - Aber nächsten Stream wieder! 🌟 MonkaS 💪",
+            $"🎯 @{username} Normal Summon - Nächster Stream = neue Hoffnung! 🚀 Hopium ⭐",
+            $"🎮 @{username} Kein Glück heute - Morgen wird's besser! 💪 Tomorrow COPIUM 🌟",
+            $"🎲 @{username} Stream Summon done - Next stream, next chance! ✨ EZ 👋",
+            $"🎯 @{username} Normal - Aber hey, nächster Stream wartet! 🚀 Pepega ⭐"
+        };
+                SendMessage(normalMessages[random.Next(normalMessages.Length)]);
             }
         }
+
 
         private void SendMessage(string message)
         {
