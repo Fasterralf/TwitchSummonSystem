@@ -117,12 +117,12 @@ namespace TwitchSummonSystem.Services
             {
                 var goldMessages = new[]
                 {
-            $"🌟✨ LEGENDARY! ✨🌟 @{username} hat GOLD erhalten! ⭐🎉 PogChamp 🎊",
-            $"🔥⚡ AMAZING! ⚡🔥 @{username} ist der GOLD Champion! 🌟 Kreygasm 🎊⭐",
-            $"🎊🌟 INCREDIBLE! 🌟🎊 @{username} hat das LEGENDARY GOLD! ⭐✨ 5Head 🔥",
-            $"⭐🎉 FANTASTIC! 🎉⭐ @{username} hat GOLD gesummoned! 🌟💫 EZ Clap 🏆",
-            $"🔥🌟 GODLIKE! 🌟🔥 @{username} mit dem LEGENDARY Pull! ⭐ POGGERS 🎊✨",
-            $"🎊⚡ INSANE! ⚡🎊 @{username} ist ein GOLD Legend! 🌟 MonkaS 💫⭐"
+            $"🌟✨ LEGENDARY! ✨🌟 @{username} hat GOLD erhalten! ⭐🎉😱🎊",
+            $"🔥⚡ AMAZING! ⚡🔥 @{username} ist der GOLD Champion! 🌟😍🎊⭐",
+            $"🎊🌟 INCREDIBLE! 🌟🎊 @{username} hat das LEGENDARY GOLD! ⭐✨🤯🔥",
+            $"⭐🎉 FANTASTIC! 🎉⭐ @{username} hat GOLD gesummoned! 🌟💫🏆😎",
+            $"🔥🌟 GODLIKE! 🌟🔥 @{username} mit dem LEGENDARY Pull! ⭐🤩🎊✨",
+            $"🎊⚡ INSANE! ⚡🎊 @{username} ist ein GOLD Legend! 🌟😤💫⭐"
         };
                 SendMessage(goldMessages[random.Next(goldMessages.Length)]);
             }
@@ -130,19 +130,18 @@ namespace TwitchSummonSystem.Services
             {
                 var normalMessages = new[]
                 {
-            $"🎲 @{username} Normal Summon - Bis zum nächsten Stream! 💪✨ Sadge",
-            $"🎯 @{username} Kein Gold heute - Nächster Stream, neue Chance! ⭐ COPIUM",
-            $"🎮 @{username} Normal Hit - Stream Summon verbraucht! 🔥 See you next time! 👋",
-            $"🎲 @{username} Nicht heute - Aber nächsten Stream wieder! 🌟 MonkaS 💪",
-            $"🎯 @{username} Normal Summon - Nächster Stream = neue Hoffnung! 🚀 Hopium ⭐",
-            $"🎮 @{username} Kein Glück heute - Morgen wird's besser! 💪 Tomorrow COPIUM 🌟",
-            $"🎲 @{username} Stream Summon done - Next stream, next chance! ✨ EZ 👋",
-            $"🎯 @{username} Normal - Aber hey, nächster Stream wartet! 🚀 Pepega ⭐"
+            $"🎲 @{username} Normal Summon - Bis zum nächsten Stream! 💪✨😔",
+            $"🎯 @{username} Kein Gold heute - Nächster Stream, neue Chance! ⭐😅",
+            $"🎮 @{username} Normal Hit - Stream Summon verbraucht! 🔥 See you next time! 👋😊",
+            $"🎲 @{username} Nicht heute - Aber nächsten Stream wieder! 🌟😬💪",
+            $"🎯 @{username} Normal Summon - Nächster Stream = neue Hoffnung! 🚀🤞⭐",
+            $"🎮 @{username} Kein Glück heute - nächster Stream wird's besser! 💪😤🌟",
+            $"🎲 @{username} Stream Summon done - Next stream, next chance! ✨👍👋",
+            $"🎯 @{username} Normal - Aber hey, nächster Stream wartet! 🚀😉⭐"
         };
                 SendMessage(normalMessages[random.Next(normalMessages.Length)]);
             }
         }
-
 
         private void SendMessage(string message)
         {
