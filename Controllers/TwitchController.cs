@@ -14,7 +14,7 @@ namespace TwitchSummonSystem.Controllers
     {
         private readonly TwitchEventSubService _eventSubService;
         private readonly LotteryService _lotteryService; 
-        private readonly IHubContext<SummonHub> _hubContext; 
+        private readonly IHubContext<SummonHub> _hubContext;
 
         public TwitchController(TwitchEventSubService eventSubService, LotteryService lotteryService, IHubContext<SummonHub> hubContext) 
         {

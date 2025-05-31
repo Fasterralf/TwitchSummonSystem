@@ -23,6 +23,11 @@
             border-radius: 10px;
             border: 2px solid #6441a5;
             z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+
+        .stats-counter.hidden {
+            display: none;
         }
 
         .stat-line {
@@ -512,6 +517,7 @@
         connection.start().then(function () {
             console.log("SignalR verbunden");
             loadCurrentStats();
+            loadStatsVisibility(); 
         }).catch(function (err) {
             console.error("SignalR Fehler: " + err.toString());
         });
@@ -527,6 +533,10 @@
 
         connection.on("LotteryUpdate", function (lotteryData) {
             updateStatsFromLotteryData(lotteryData);
+        });
+
+        connection.on("StatsVisibilityChanged", function (visible) {
+            toggleStatsVisibility(visible);
         });
 
         function createEnergyParticles(container, rarity) {
@@ -654,6 +664,27 @@
                 .catch(err => {
                     console.error('Fehler beim Laden der Stats:', err);
                     document.getElementById('goldChance').textContent = '0.8%';
+                });
+        }
+
+        function toggleStatsVisibility(visible) {
+            const statsContainer = document.querySelector('.stats-counter');
+            if (visible) {
+                statsContainer.classList.remove('hidden');
+            } else {
+                statsContainer.classList.add('hidden');
+            }
+        }
+
+        function loadStatsVisibility() {
+            fetch('/api/obs/stats-visibility')
+                .then(response => response.json())
+                .then(data => {
+                    toggleStatsVisibility(data.visible);
+                })
+                .catch(err => {
+                    console.log('Stats Visibility laden fehlgeschlagen, verwende Standard (sichtbar)');
+                    toggleStatsVisibility(true);
                 });
         }
 

@@ -504,6 +504,21 @@
                     </div>
                 </div>
 
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-icon">📺</div>
+                        <h2>OBS Overlay</h2>
+                    </div>
+                    <div class="button-group">
+                        <button class="button secondary" onclick="openOBS()">📺 OBS Overlay öffnen</button>
+                        <button class="button" id="toggleStatsBtn" onclick="toggleOBSStats()">📊 Stats ausblenden</button>
+                    </div>
+                    <div class="token-card">
+                        <p><strong>Stats Anzeige:</strong> <span id="statsVisibilityStatus" style="color: #28a745;">✅ Sichtbar</span></p>
+                        <p><strong>Overlay URL:</strong> <code style="font-size: 0.8rem;">/obs.html</code></p>
+                    </div>
+                </div>
+
                 <!-- Live Log -->
                 <div class="section">
                     <div class="section-header">
@@ -524,6 +539,7 @@
             loadStats();
             loadCurrentRewardName();
             loadTokenStatus();
+            updateStatsVisibilityUI();
             log('✅ Admin Panel geladen');
 
             document.getElementById('autoRefreshTokens').addEventListener('change', toggleTokenAutoRefresh);
@@ -836,6 +852,58 @@
                 }
             } catch (error) {
                 log('❌ Token Refresh Fehler: ' + error.message);
+            }
+        }
+
+        // Globale Variable für Stats Visibility
+        let obsStatsVisible = true;
+
+        // Stats Toggle Funktion
+        async function toggleOBSStats() {
+            try {
+                const response = await fetch('/api/obs/toggle-stats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ visible: !obsStatsVisible })
+                });
+
+                if (response.ok) {
+                    obsStatsVisible = !obsStatsVisible;
+                    updateStatsVisibilityUI();
+                    log(`📊 OBS Stats ${obsStatsVisible ? 'eingeblendet' : 'ausgeblendet'}`);
+                } else {
+                    log('❌ Fehler beim Umschalten der Stats');
+                }
+            } catch (error) {
+                log(`❌ Stats Toggle Fehler: ${error.message}`);
+            }
+        }
+
+        // UI Update für Stats Visibility
+        function updateStatsVisibilityUI() {
+            const btn = document.getElementById('toggleStatsBtn');
+            const status = document.getElementById('statsVisibilityStatus');
+
+            if (obsStatsVisible) {
+                btn.textContent = '📊 Stats ausblenden';
+                btn.className = 'button';
+                status.innerHTML = '<span style="color: #28a745;">✅ Sichtbar</span>';
+            } else {
+                btn.textContent = '📊 Stats einblenden';
+                btn.className = 'button secondary';
+                status.innerHTML = '<span style="color: #dc3545;">❌ Versteckt</span>';
+            }
+        }
+
+        // Stats Visibility beim Laden prüfen
+        async function loadOBSStatsVisibility() {
+            try {
+                const response = await fetch('/api/obs/stats-visibility');
+                const data = await response.json();
+                obsStatsVisible = data.visible;
+                updateStatsVisibilityUI();
+            } catch (error) {
+                console.log('Stats Visibility laden fehlgeschlagen');
             }
         }
 
