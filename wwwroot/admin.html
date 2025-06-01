@@ -559,6 +559,7 @@
     </div>
 
     <script>
+        const API_BASE = 'http://localhost:5000';
         window.onload = function () {
             loadStats();
             loadCurrentRewardName();
@@ -596,7 +597,7 @@
         async function simulateSummon() {
             try {
                 log('🎲 Simuliere Summon...');
-                const response = await fetch('/api/twitch/simulate-reward', {
+                const response = await fetch(`${API_BASE}/api/twitch/simulate-reward`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ Username: 'AdminTest' })
@@ -624,7 +625,7 @@
             const username = document.getElementById('testUsername').value || 'TestUser';
             try {
                 log(`🎯 Custom Summon für ${username}...`);
-                const response = await fetch('/api/twitch/simulate-reward', {
+                const response = await fetch(`${API_BASE}/api/twitch/simulate-reward`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ Username: username })
@@ -663,7 +664,7 @@
             if (!confirm('Lottery wirklich zurücksetzen?')) return;
             try {
                 log('🔄 Setze Lottery zurück...');
-                const response = await fetch('/api/summon/pity/reset', { method: 'POST' });
+                const response = await fetch(`${API_BASE}/api/summon/pity/reset`, { method: 'POST' });
                 const data = await response.json();
                 log('✅ Lottery wurde zurückgesetzt');
                 setTimeout(() => {
@@ -677,7 +678,7 @@
         async function forceGoldSummon() {
             try {
                 log('⭐ Force Gold Summon...');
-                const response = await fetch('/api/twitch/simulate-force-gold', {
+                const response = await fetch(`${API_BASE}/api/twitch/simulate-force-gold`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ Username: 'ForceGoldAdmin' })
@@ -700,7 +701,7 @@
 
         async function loadStats() {
             try {
-                const response = await fetch('/api/summon/stats');
+                const response = await fetch(`${API_BASE}/api/summon/stats`);
                 const stats = await response.json();
                 console.log('Stats Response:', stats);
 
@@ -740,7 +741,7 @@
             try {
                 log(`🎯 Ändere überwachten Reward zu: "${newName}"...`);
                 showStatus('rewardNameStatus', 'Suche Reward...', 'info');
-                const response = await fetch('/api/twitch/update-reward-name', {
+                const response = await fetch(`${API_BASE}/api/twitch/update-reward-name`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ RewardName: newName })
@@ -763,7 +764,7 @@
 
         async function loadCurrentRewardName() {
             try {
-                const response = await fetch('/api/twitch/current-reward-name');
+                const response = await fetch(`${API_BASE}/api/twitch/current-reward-name`);
                 const data = await response.json();
                 if (data.rewardName) {
                     document.getElementById('currentRewardName').textContent = data.rewardName;
@@ -777,7 +778,7 @@
         async function loadAvailableRewards() {
             try {
                 log('🔍 Lade verfügbare Rewards...');
-                const response = await fetch('/api/twitch/available-rewards');
+                const response = await fetch(`${API_BASE}/api/twitch/available-rewards`);
                 const data = await response.json();
                 const rewardsDiv = document.getElementById('availableRewards');
 
@@ -808,7 +809,7 @@
         }
 
         function openOBS() {
-            window.open('/obs.html', '_blank');
+            window.open(`${API_BASE}/obs.html`, '_blank');
             log('📺 OBS Overlay geöffnet');
         }
 
@@ -822,7 +823,7 @@
         async function loadTokenStatus() {
             try {
                 log('🔑 Lade Token-Status...');
-                const response = await fetch('/api/token/status');
+                const response = await fetch(`${API_BASE}/api/token/status`);
                 const data = await response.json();
 
                 document.getElementById('lastTokenUpdate').textContent = new Date().toLocaleString('de-DE');
@@ -870,7 +871,7 @@
         async function forceRefreshTokens() {
             try {
                 log('🔄 Erneuere Token...');
-                const response = await fetch('/api/token/refresh', { method: 'POST' });
+                const response = await fetch(`${API_BASE}/api/token/refresh`, { method: 'POST' });
                 const data = await response.json();
                 if (response.ok) {
                     log('✅ Token erfolgreich erneuert!');
@@ -889,7 +890,7 @@
         // Stats Toggle Funktion
         async function toggleOBSStats() {
             try {
-                const response = await fetch('/api/obs/toggle-stats', {
+                const response = await fetch(`${API_BASE}/api/obs/toggle-stats`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ visible: !obsStatsVisible })
@@ -926,7 +927,7 @@
         // Stats Visibility beim Laden prüfen
         async function loadOBSStatsVisibility() {
             try {
-                const response = await fetch('/api/obs/stats-visibility');
+                const response = await fetch(`${API_BASE}/api/obs/stats-visibility`);
                 const data = await response.json();
                 obsStatsVisible = data.visible;
                 updateStatsVisibilityUI();
@@ -951,7 +952,7 @@
         async function loadChatStatus() {
             try {
                 log('💬 Lade Chat-Status...');
-                const response = await fetch('/api/chat/status');
+                const response = await fetch(`${API_BASE}/api/chat/status`);
                 const data = await response.json();
 
                 let statusClass = data.connected ? 'token-status-good' : 'token-status-error';
@@ -989,7 +990,7 @@
         async function forceChatReconnect() {
             try {
                 log('🔗 Starte Chat-Reconnect...');
-                const response = await fetch('/api/chat/reconnect', { method: 'POST' });
+                const response = await fetch(`${API_BASE}/api/chat/reconnect`, { method: 'POST' });
                 const data = await response.json();
 
                 if (response.ok && data.success) {
