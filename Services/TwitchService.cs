@@ -2,62 +2,356 @@
 using Microsoft.AspNetCore.SignalR;
 using TwitchSummonSystem.Hubs;
 using TwitchSummonSystem.Models;
+using System.Text.Json;
+using System.Text;
 
 namespace TwitchSummonSystem.Services
 {
     public class TwitchService
     {
         private readonly TwitchAPI _twitchApi;
-        private readonly LotteryService _lotteryService; 
+        private readonly LotteryService _lotteryService;
         private readonly IHubContext<SummonHub> _hubContext;
         private readonly IConfiguration _configuration;
+        private readonly TokenService _tokenService;
 
-        public TwitchService(LotteryService lotteryService, IHubContext<SummonHub> hubContext, IConfiguration configuration)
+        // Logging Helper
+        private void LogInfo(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ℹ️ [TWITCH] {message}");
+        private void LogSuccess(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ✅ [TWITCH] {message}");
+        private void LogWarning(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ⚠️ [TWITCH] {message}");
+        private void LogError(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ [TWITCH] {message}");
+        private void LogDebug(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🔍 [TWITCH] {message}");
+
+        public TwitchService(
+            LotteryService lotteryService,
+            IHubContext<SummonHub> hubContext,
+            IConfiguration configuration,
+            TokenService tokenService)
         {
             _lotteryService = lotteryService;
             _hubContext = hubContext;
             _configuration = configuration;
+            _tokenService = tokenService;
             _twitchApi = new TwitchAPI();
 
+            LogInfo("TwitchService wird initialisiert...");
             _ = InitializeAsync();
         }
 
         private async Task InitializeAsync()
         {
-            var clientId = _configuration["Twitch:ClientId"];
-            var accessToken = _configuration["Twitch:AccessToken"];
+            try
+            {
+                LogInfo("Starte Twitch API Initialisierung...");
 
-            _twitchApi.Settings.ClientId = clientId;
-            _twitchApi.Settings.AccessToken = accessToken;
+                var clientId = _configuration["Twitch:ClientId"];
+                var channelName = _configuration["Twitch:ChannelName"];
+                var channelId = _configuration["Twitch:ChannelId"];
 
-            Console.WriteLine("✅ Twitch Service für ArabNP initialisiert");
-            Console.WriteLine($"📺 Kanal: {_configuration["Twitch:ChannelName"]}");
+                if (string.IsNullOrEmpty(clientId))
+                {
+                    LogError("Twitch ClientId fehlt in Konfiguration!");
+                    return;
+                }
 
-            await Task.CompletedTask;
+                if (string.IsNullOrEmpty(channelName))
+                {
+                    LogError("Twitch ChannelName fehlt in Konfiguration!");
+                    return;
+                }
+
+                // Hole aktuellen Access Token
+                var accessToken = await _tokenService.GetUserAccessTokenAsync();
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    LogError("Kein gültiger Access Token verfügbar!");
+                    return;
+                }
+
+                _twitchApi.Settings.ClientId = clientId;
+                _twitchApi.Settings.AccessToken = accessToken;
+
+                LogSuccess("Twitch API erfolgreich initialisiert");
+                LogInfo($"📺 Kanal: {channelName} (ID: {channelId ?? "nicht gesetzt"})");
+                LogInfo($"🎁 Summon Reward: {_configuration["Twitch:SummonRewardName"] ?? "nicht gesetzt"}");
+
+                // Teste API-Verbindung
+                await TestApiConnectionAsync();
+            }
+            catch (Exception ex)
+            {
+                LogError($"Fehler bei Twitch Service Initialisierung: {ex.Message}");
+            }
+        }
+
+        private async Task TestApiConnectionAsync()
+        {
+            try
+            {
+                LogDebug("Teste Twitch API Verbindung...");
+
+                var channelName = _configuration["Twitch:ChannelName"];
+                if (!string.IsNullOrEmpty(channelName))
+                {
+                    var users = await _twitchApi.Helix.Users.GetUsersAsync(logins: new List<string> { channelName });
+                    if (users?.Users?.Length > 0)
+                    {
+                        var user = users.Users[0];
+                        LogSuccess($"API-Verbindung erfolgreich - Kanal gefunden: {user.DisplayName} (ID: {user.Id})");
+
+                        // Update Channel ID in Config falls nicht gesetzt
+                        if (string.IsNullOrEmpty(_configuration["Twitch:ChannelId"]))
+                        {
+                            _configuration["Twitch:ChannelId"] = user.Id;
+                            LogInfo($"Channel ID automatisch gesetzt: {user.Id}");
+                        }
+                    }
+                    else
+                    {
+                        LogWarning($"Kanal '{channelName}' nicht gefunden!");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogWarning($"API-Verbindungstest fehlgeschlagen: {ex.Message}");
+            }
         }
 
         public async Task<SummonResult> HandleChannelPointReward(string username, string rewardTitle)
         {
-            Console.WriteLine($"🎁 Channel Point Reward: {rewardTitle} von {username}");
-
-            var summonRewardName = _configuration["Twitch:SummonRewardName"];
-            if (rewardTitle.Contains(summonRewardName!) || rewardTitle.Contains("test", StringComparison.CurrentCultureIgnoreCase))
+            try
             {
-                var result = _lotteryService.PerformSummon(username);
+                LogInfo($"🎁 Channel Point Reward erhalten: '{rewardTitle}' von {username}");
 
-                await _hubContext.Clients.All.SendAsync("SummonResult", result);
+                var summonRewardName = _configuration["Twitch:SummonRewardName"];
 
-                Console.WriteLine($"🎲 {username}: {(result.IsGold ? "⭐ GOLD!" : "❌ Kein Gold")} - Pity: {result.PityCount}/80");
+                if (string.IsNullOrEmpty(summonRewardName))
+                {
+                    LogWarning("Summon Reward Name nicht in Konfiguration gesetzt!");
+                    return null!;
+                }
 
-                return result;
+                // Prüfe ob es sich um den Summon Reward handelt
+                var isSummonReward = rewardTitle.Contains(summonRewardName, StringComparison.CurrentCultureIgnoreCase) ||
+                                   rewardTitle.Contains("test", StringComparison.CurrentCultureIgnoreCase);
+
+                if (isSummonReward)
+                {
+                    LogInfo($"🎲 Führe Summon für {username} aus...");
+
+                    var result = _lotteryService.PerformSummon(username);
+
+                    // Sende Ergebnis an alle verbundenen Clients
+                    await _hubContext.Clients.All.SendAsync("SummonResult", result);
+
+                    var resultText = result.IsGold ? "⭐ GOLD!" : "❌ Kein Gold";
+                    LogSuccess($"🎲 {username}: {resultText} - Pity: {result.PityCount}/80");
+
+                    // Zusätzliche Statistiken loggen
+                    if (result.IsGold)
+                    {
+                        LogInfo($"🏆 Gold nach {result.PityCount} Versuchen! Pity Counter zurückgesetzt.");
+                    }
+                    else if (result.PityCount >= 70)
+                    {
+                        LogWarning($"⚠️ Hoher Pity Counter: {result.PityCount}/80 - Gold bald garantiert!");
+                    }
+
+                    return result;
+                }
+                else
+                {
+                    LogDebug($"Reward '{rewardTitle}' ist kein Summon Reward - ignoriert");
+                    return null!;
+                }
             }
-
-            return null!;
+            catch (Exception ex)
+            {
+                LogError($"Fehler beim Verarbeiten des Channel Point Rewards: {ex.Message}");
+                return null!;
+            }
         }
 
-        public string GetChannelInfo()
+        public async Task<string> GetChannelInfoAsync()
         {
-            return $"Kanal: {_configuration["Twitch:ChannelName"]} (ID: {_configuration["Twitch:ChannelId"]})";
+            try
+            {
+                var channelName = _configuration["Twitch:ChannelName"];
+                var channelId = _configuration["Twitch:ChannelId"];
+
+                if (string.IsNullOrEmpty(channelName))
+                {
+                    return "❌ Kanal nicht konfiguriert";
+                }
+
+                // Versuche aktuelle Kanal-Informationen zu holen
+                try
+                {
+                    var users = await _twitchApi.Helix.Users.GetUsersAsync(logins: new List<string> { channelName });
+                    if (users?.Users?.Length > 0)
+                    {
+                        var user = users.Users[0];
+                        return $"📺 Kanal: {user.DisplayName} (ID: {user.Id}) - Status: ✅ Verbunden";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogWarning($"Fehler beim Abrufen der Kanal-Informationen: {ex.Message}");
+                }
+
+                return $"📺 Kanal: {channelName} (ID: {channelId ?? "unbekannt"}) - Status: ⚠️ Nicht erreichbar";
+            }
+            catch (Exception ex)
+            {
+                LogError($"Fehler beim Abrufen der Kanal-Informationen: {ex.Message}");
+                return "❌ Fehler beim Abrufen der Kanal-Informationen";
+            }
+        }
+
+        public async Task<object> GetServiceStatusAsync()
+        {
+            try
+            {
+                var channelName = _configuration["Twitch:ChannelName"];
+                var channelId = _configuration["Twitch:ChannelId"];
+                var summonRewardName = _configuration["Twitch:SummonRewardName"];
+
+                var isApiConnected = false;
+                var channelExists = false;
+                var userDisplayName = string.Empty;
+
+                try
+                {
+                    if (!string.IsNullOrEmpty(channelName))
+                    {
+                        var users = await _twitchApi.Helix.Users.GetUsersAsync(logins: new List<string> { channelName });
+                        if (users?.Users?.Length > 0)
+                        {
+                            isApiConnected = true;
+                            channelExists = true;
+                            userDisplayName = users.Users[0].DisplayName;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogDebug($"API-Status-Check fehlgeschlagen: {ex.Message}");
+                }
+
+                return new
+                {
+                    apiConnected = isApiConnected,
+                    channel = new
+                    {
+                        name = channelName,
+                        displayName = userDisplayName,
+                        id = channelId,
+                        exists = channelExists
+                    },
+                    configuration = new
+                    {
+                        clientIdSet = !string.IsNullOrEmpty(_configuration["Twitch:ClientId"]),
+                        channelNameSet = !string.IsNullOrEmpty(channelName),
+                        channelIdSet = !string.IsNullOrEmpty(channelId),
+                        summonRewardNameSet = !string.IsNullOrEmpty(summonRewardName),
+                        summonRewardName = summonRewardName
+                    },
+                    lastCheck = DateTime.UtcNow
+                };
+            }
+            catch (Exception ex)
+            {
+                LogError($"Fehler beim Abrufen des Service Status: {ex.Message}");
+                return new
+                {
+                    apiConnected = false,
+                    channel = new { name = "", displayName = "", id = "", exists = false },
+                    configuration = new { clientIdSet = false, channelNameSet = false, channelIdSet = false, summonRewardNameSet = false, summonRewardName = "" },
+                    lastCheck = DateTime.UtcNow,
+                    error = ex.Message
+                };
+            }
+        }
+
+        public async Task<bool> RefreshApiTokenAsync()
+        {
+            try
+            {
+                LogInfo("Erneuere Twitch API Token...");
+
+                var newAccessToken = await _tokenService.GetUserAccessTokenAsync();
+                if (!string.IsNullOrEmpty(newAccessToken))
+                {
+                    _twitchApi.Settings.AccessToken = newAccessToken;
+                    LogSuccess("Twitch API Token erfolgreich erneuert");
+
+                    // Teste neue Verbindung
+                    await TestApiConnectionAsync();
+                    return true;
+                }
+                else
+                {
+                    LogError("Kein neuer Access Token erhalten");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError($"Fehler beim Erneuern des API Tokens: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<string> GetDetailedServiceInfoAsync()
+        {
+            try
+            {
+                var status = await GetServiceStatusAsync();
+                var statusObj = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(status));
+
+                var info = new StringBuilder();
+                info.AppendLine("=== TWITCH SERVICE STATUS ===");
+                info.AppendLine($"Zeitpunkt: {DateTime.Now:dd.MM.yyyy HH:mm:ss}");
+                info.AppendLine();
+
+                var channel = statusObj.GetProperty("channel");
+                var config = statusObj.GetProperty("configuration");
+
+                info.AppendLine("📺 KANAL-INFORMATIONEN:");
+                info.AppendLine($"   Name: {channel.GetProperty("name").GetString()}");
+                info.AppendLine($"   Display Name: {channel.GetProperty("displayName").GetString()}");
+                info.AppendLine($"   ID: {channel.GetProperty("id").GetString()}");
+                info.AppendLine($"   Existiert: {(channel.GetProperty("exists").GetBoolean() ? "✅ Ja" : "❌ Nein")}");
+                info.AppendLine();
+
+                info.AppendLine("🔌 API-VERBINDUNG:");
+                info.AppendLine($"   Status: {(statusObj.GetProperty("apiConnected").GetBoolean() ? "✅ Verbunden" : "❌ Getrennt")}");
+                info.AppendLine($"   Client ID: {(config.GetProperty("clientIdSet").GetBoolean() ? "✅ Gesetzt" : "❌ Fehlt")}");
+                info.AppendLine();
+
+                info.AppendLine("⚙️ KONFIGURATION:");
+                info.AppendLine($"   Kanal Name: {(config.GetProperty("channelNameSet").GetBoolean() ? "✅ Gesetzt" : "❌ Fehlt")}");
+                info.AppendLine($"   Kanal ID: {(config.GetProperty("channelIdSet").GetBoolean() ? "✅ Gesetzt" : "❌ Fehlt")}");
+                info.AppendLine($"   Summon Reward: {(config.GetProperty("summonRewardNameSet").GetBoolean() ? "✅ Gesetzt" : "❌ Fehlt")}");
+                if (config.GetProperty("summonRewardNameSet").GetBoolean())
+                {
+                    info.AppendLine($"   Reward Name: '{config.GetProperty("summonRewardName").GetString()}'");
+                }
+
+                return info.ToString();
+            }
+            catch (Exception ex)
+            {
+                return $"❌ Fehler beim Erstellen des Service Reports: {ex.Message}";
+            }
+        }
+
+        // Cleanup
+        public void Dispose()
+        {
+            LogInfo("TwitchService disposed");
         }
     }
 }
+
