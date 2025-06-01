@@ -8,7 +8,15 @@ namespace TwitchSummonSystem.Controllers
     public class ChatController : ControllerBase
     {
         private readonly LotteryService _lotteryService;
-        public ChatController(LotteryService lotteryService) => _lotteryService = lotteryService;
+        private readonly TwitchChatService _chatService;
+        private readonly ChatTokenService _chatTokenService;
+
+        public ChatController(LotteryService lotteryService, TwitchChatService chatService, ChatTokenService chatTokenService)
+        {
+            _lotteryService = lotteryService;
+            _chatService = chatService;  // ← Hinzufügen
+            _chatTokenService = chatTokenService;  // ← Hinzufügen
+        }
 
         [HttpGet("pity")]
         public ActionResult<string> GetPityCommand()
@@ -63,6 +71,20 @@ namespace TwitchSummonSystem.Controllers
             }
 
             return Ok($"📊 {lotteryData.TotalSummons} Summons | {lotteryData.TotalGolds} Golds | {goldRate:F1}% Rate | {goldChance:F1}% Chance{nextBonusText}");
+        }
+
+        [HttpGet("status")]
+        public async Task<IActionResult> GetChatStatus()
+        {
+            var status = await _chatService.GetChatStatusAsync();
+            return Ok(status);
+        }
+
+        [HttpPost("reconnect")]
+        public async Task<IActionResult> ForceReconnect()
+        {
+            var success = await _chatService.ForceReconnectAsync();
+            return Ok(new { success, message = success ? "Reconnect erfolgreich" : "Reconnect fehlgeschlagen" });
         }
     }
 }

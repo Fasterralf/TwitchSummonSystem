@@ -430,6 +430,30 @@
                     </div>
                 </div>
 
+                <!-- Ergänze nach dem Token Dashboard eine neue Chat-Sektion: -->
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-icon">💬</div>
+                        <h2>Chat Status</h2>
+                    </div>
+                    <div class="auto-refresh-controls">
+                        <label>
+                            <input type="checkbox" id="autoRefreshChat" checked>
+                            Auto-Refresh Chat (15s)
+                        </label>
+                        <div class="button-group">
+                            <button class="button secondary" onclick="loadChatStatus()">🔄 Status</button>
+                            <button class="button success" onclick="forceChatReconnect()">🔗 Reconnect</button>
+                        </div>
+                    </div>
+                    <div id="chatStatus">
+                        <div class="token-card">
+                            <h4>💬 Lade Chat-Status...</h4>
+                        </div>
+                    </div>
+                </div>
+
+
                 <!-- Reward Configuration -->
                 <div class="section">
                     <div class="section-header">
@@ -539,11 +563,14 @@
             loadStats();
             loadCurrentRewardName();
             loadTokenStatus();
+            loadChatStatus(); 
             updateStatsVisibilityUI();
             log('✅ Admin Panel geladen');
 
             document.getElementById('autoRefreshTokens').addEventListener('change', toggleTokenAutoRefresh);
             toggleTokenAutoRefresh();
+            document.getElementById('autoRefreshChat').addEventListener('change', toggleChatAutoRefresh); 
+            toggleChatAutoRefresh();
 
             setTimeout(() => {
                 loadAvailableRewards();
@@ -915,6 +942,74 @@
             } else {
                 clearInterval(tokenAutoRefreshInterval);
                 log('❌ Token Auto-Refresh deaktiviert');
+            }
+        }
+
+        let chatAutoRefreshInterval;
+
+        async function loadChatStatus() {
+            try {
+                log('💬 Lade Chat-Status...');
+                const response = await fetch('/api/chat/status');
+                const data = await response.json();
+
+                let statusClass = data.connected ? 'token-status-good' : 'token-status-error';
+                let connectionStatus = data.connected ? '✅ Verbunden' : '❌ Getrennt';
+
+                document.getElementById('chatStatus').innerHTML = `
+            <div class="token-card ${statusClass}">
+                <h4>💬 Chat Verbindung</h4>
+                <p><strong>Status:</strong> ${connectionStatus}</p>
+                <p><strong>Kanal:</strong> ${data.channel || 'nicht gesetzt'}</p>
+                <p><strong>Bot:</strong> ${data.botUsername || 'nicht gesetzt'}</p>
+                <p><strong>Reconnect-Versuche:</strong> ${data.reconnectAttempts}/${data.maxReconnectAttempts}</p>
+                <p><strong>Letzte Verbindung:</strong> ${data.lastConnectionAttempt ? new Date(data.lastConnectionAttempt).toLocaleString('de-DE') : 'nie'}</p>
+            </div>
+            <div class="token-card">
+                <h4>⚙️ Chat Konfiguration</h4>
+                <p><strong>Kanal Name:</strong> ${data.configuration?.channelNameSet ? '✅ Gesetzt' : '❌ Fehlt'}</p>
+                <p><strong>Bot Username:</strong> ${data.configuration?.botUsernameSet ? '✅ Gesetzt' : '❌ Fehlt'}</p>
+                <p><strong>Chat Token:</strong> ${data.configuration?.chatTokenSet ? '✅ Gesetzt' : '❌ Fehlt'}</p>
+            </div>
+        `;
+
+                log(`✅ Chat-Status geladen - ${connectionStatus}`);
+            } catch (error) {
+                document.getElementById('chatStatus').innerHTML = `
+            <div class="token-card token-status-error">
+                <h4>❌ Fehler beim Laden</h4>
+                <p>${error.message}</p>
+            </div>
+        `;
+                log(`❌ Chat-Status Fehler: ${error.message}`);
+            }
+        }
+
+        async function forceChatReconnect() {
+            try {
+                log('🔗 Starte Chat-Reconnect...');
+                const response = await fetch('/api/chat/reconnect', { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    log('✅ Chat-Reconnect erfolgreich!');
+                    setTimeout(loadChatStatus, 2000);
+                } else {
+                    log('❌ Chat-Reconnect fehlgeschlagen: ' + (data.error || 'Unbekannter Fehler'));
+                }
+            } catch (error) {
+                log('❌ Chat-Reconnect Fehler: ' + error.message);
+            }
+        }
+
+        function toggleChatAutoRefresh() {
+            const checkbox = document.getElementById('autoRefreshChat');
+            if (checkbox.checked) {
+                chatAutoRefreshInterval = setInterval(loadChatStatus, 15000);
+                log('✅ Chat Auto-Refresh aktiviert (15s)');
+            } else {
+                clearInterval(chatAutoRefreshInterval);
+                log('❌ Chat Auto-Refresh deaktiviert');
             }
         }
 
