@@ -1,55 +1,70 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TwitchSummonSystem.Services;
 
-namespace TwitchSummonSystem.Controllers
+[ApiController]
+[Route("api/[controller]")]
+public class TokenController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class TokenController : ControllerBase
+    private readonly TokenService _tokenService;
+    private readonly ChatTokenService _chatTokenService; 
+
+    public TokenController(TokenService tokenService, ChatTokenService chatTokenService) 
     {
-        private readonly TokenService _tokenService;
+        _tokenService = tokenService;
+        _chatTokenService = chatTokenService; 
+    }
 
-        public TokenController(TokenService tokenService)
+    [HttpGet("status")]
+    public async Task<ActionResult> GetTokenStatus()
+    {
+        try
         {
-            _tokenService = tokenService;
+            var userAppStatus = await _tokenService.GetTokenStatusAsync();
+            var chatStatus = await _chatTokenService.GetChatTokenStatusAsync(); 
+
+            var combinedStatus = new
+            {
+                userToken = ((dynamic)userAppStatus).userToken,
+                appToken = ((dynamic)userAppStatus).appToken,
+                chatToken = chatStatus, 
+                lastCheck = DateTime.UtcNow
+            };
+
+            return Ok(combinedStatus);
         }
-
-        [HttpGet("status")]
-        public async Task<ActionResult> GetTokenStatus()
+        catch (Exception ex)
         {
-            try
-            {
-                var status = await _tokenService.GetTokenStatusAsync();
-                return Ok(status); // ← Einfach das direkt zurückgeben
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { error = ex.Message });
-            }
+            return StatusCode(500, new { error = ex.Message });
         }
+    }
 
-
-        [HttpPost("refresh")]
-        public async Task<ActionResult> ForceRefreshTokens()
+    [HttpPost("refresh")]
+    public async Task<ActionResult> ForceRefreshTokens()
+    {
+        try
         {
-            try
-            {
-                var success = await _tokenService.ForceRefreshTokensAsync(); // ← Neue Methode verwenden
+            var userAppSuccess = await _tokenService.ForceRefreshTokensAsync();
+            var chatSuccess = await _chatTokenService.ForceRefreshChatTokenAsync(); 
 
-                if (success)
+            var success = userAppSuccess && chatSuccess;
+
+            if (success)
+            {
+                return Ok(new { message = "Alle Token erfolgreich erneuert" });
+            }
+            else
+            {
+                return StatusCode(500, new
                 {
-                    return Ok(new { message = "Token erfolgreich erneuert" });
-                }
-                else
-                {
-                    return StatusCode(500, new { error = "Token-Refresh fehlgeschlagen" });
-                }
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { error = ex.Message });
+                    error = "Token-Refresh teilweise fehlgeschlagen",
+                    userAppSuccess = userAppSuccess,
+                    chatSuccess = chatSuccess
+                });
             }
         }
-
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
 }
