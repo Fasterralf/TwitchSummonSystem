@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TwitchSummonSystem.Services;
+using System.Text.Json;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -22,33 +23,51 @@ public class TokenController : ControllerBase
             var userAppStatus = await _tokenService.GetTokenStatusAsync();
             var chatStatus = await _chatTokenService.GetChatTokenStatusAsync();
 
-            // Sichere Extraktion der Token-Daten mit korrekten Property-Namen
-            dynamic userAppData = userAppStatus;
-            dynamic chatData = chatStatus;
+            // Konvertiere zu JsonElement für sicheren Zugriff
+            var userAppJson = JsonSerializer.Serialize(userAppStatus);
+            var userAppElement = JsonSerializer.Deserialize<JsonElement>(userAppJson);
+
+            var chatJson = JsonSerializer.Serialize(chatStatus);
+            var chatElement = JsonSerializer.Deserialize<JsonElement>(chatJson);
+
+            // Sichere Extraktion der User Token Daten
+            var userTokenElement = userAppElement.GetProperty("userToken");
+            var userValid = userTokenElement.TryGetProperty("valid", out var userValidProp) ? userValidProp.GetBoolean() : false;
+            var userExpiresAt = userTokenElement.TryGetProperty("expiresAt", out var userExpiresProp) ? userExpiresProp.GetDateTime() : DateTime.UtcNow;
+            var userHours = userTokenElement.TryGetProperty("hoursUntilExpiry", out var userHoursProp) ? userHoursProp.GetDouble() : 0.0;
+
+            // Sichere Extraktion der App Token Daten
+            var appTokenElement = userAppElement.GetProperty("appToken");
+            var appValid = appTokenElement.TryGetProperty("valid", out var appValidProp) ? appValidProp.GetBoolean() : false;
+            var appExpiresAt = appTokenElement.TryGetProperty("expiresAt", out var appExpiresProp) ? appExpiresProp.GetDateTime() : DateTime.UtcNow;
+            var appDays = appTokenElement.TryGetProperty("daysUntilExpiry", out var appDaysProp) ? appDaysProp.GetDouble() : 0.0;
+
+            // Sichere Extraktion der Chat Token Daten
+            var chatValid = chatElement.TryGetProperty("valid", out var chatValidProp) ? chatValidProp.GetBoolean() : false;
+            var chatExpiresAt = chatElement.TryGetProperty("expiresAt", out var chatExpiresProp) ? chatExpiresProp.GetDateTime() : DateTime.UtcNow;
+            var chatHours = chatElement.TryGetProperty("hoursUntilExpiry", out var chatHoursProp) ? chatHoursProp.GetDouble() : 0.0;
+            var chatError = chatElement.TryGetProperty("error", out var chatErrorProp) ? chatErrorProp.GetString() : null;
 
             var combinedStatus = new
             {
                 userToken = new
                 {
-                    valid = userAppData?.userToken?.valid ?? false,
-                    expiresAt = userAppData?.userToken?.expiresAt ?? DateTime.UtcNow,
-                    // Konvertiere hoursUntilExpiry zu daysUntilExpiry für User Token
-                    daysUntilExpiry = (userAppData?.userToken?.hoursUntilExpiry ?? 0.0) / 24.0
+                    valid = userValid,
+                    expiresAt = userExpiresAt,
+                    daysUntilExpiry = userHours / 24.0
                 },
                 appToken = new
                 {
-                    valid = userAppData?.appToken?.valid ?? false,
-                    expiresAt = userAppData?.appToken?.expiresAt ?? DateTime.UtcNow,
-                    // App Token hat bereits daysUntilExpiry
-                    daysUntilExpiry = userAppData?.appToken?.daysUntilExpiry ?? 0.0
+                    valid = appValid,
+                    expiresAt = appExpiresAt,
+                    daysUntilExpiry = appDays
                 },
                 chatToken = new
                 {
-                    valid = chatData?.valid ?? false,
-                    expiresAt = chatData?.expiresAt ?? DateTime.UtcNow,
-                    // Konvertiere hoursUntilExpiry zu daysUntilExpiry für Chat Token
-                    daysUntilExpiry = (chatData?.hoursUntilExpiry ?? 0.0) / 24.0,
-                    error = chatData?.error
+                    valid = chatValid,
+                    expiresAt = chatExpiresAt,
+                    daysUntilExpiry = chatHours / 24.0,
+                    error = chatError
                 },
                 lastCheck = DateTime.UtcNow
             };
@@ -57,6 +76,9 @@ public class TokenController : ControllerBase
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ [TOKEN-CONTROLLER] Fehler in GetTokenStatus: {ex.Message}");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🔍 [TOKEN-CONTROLLER] Stack Trace: {ex.StackTrace}");
+
             return StatusCode(500, new
             {
                 error = ex.Message,
@@ -72,10 +94,14 @@ public class TokenController : ControllerBase
     {
         try
         {
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ℹ️ [TOKEN-CONTROLLER] Starte manuellen Token-Refresh");
+
             var userAppSuccess = await _tokenService.ForceRefreshTokensAsync();
             var chatSuccess = await _chatTokenService.ForceRefreshChatTokenAsync();
 
             var success = userAppSuccess && chatSuccess;
+
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ℹ️ [TOKEN-CONTROLLER] Refresh Ergebnis - UserApp: {userAppSuccess}, Chat: {chatSuccess}");
 
             if (success)
             {
@@ -93,6 +119,7 @@ public class TokenController : ControllerBase
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ [TOKEN-CONTROLLER] Fehler in ForceRefreshTokens: {ex.Message}");
             return StatusCode(500, new { error = ex.Message });
         }
     }

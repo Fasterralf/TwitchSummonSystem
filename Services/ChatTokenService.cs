@@ -314,12 +314,12 @@ namespace TwitchSummonSystem.Services
             }
         }
 
+        // In der GetChatTokenStatusAsync() Methode, ersetzen Sie den return-Block:
         public async Task<object> GetChatTokenStatusAsync()
         {
             try
             {
                 LogDebug("Erstelle Chat Token Status Report...");
-
                 var currentToken = _configuration["Twitch:ChatOAuthToken"]?.Replace("oauth:", "");
                 var isValid = false;
                 var hoursUntilExpiry = 0.0;
@@ -336,8 +336,9 @@ namespace TwitchSummonSystem.Services
                 var status = new
                 {
                     valid = isValid,
-                    expiresAt = _chatTokenExpiry,
+                    expiresAt = _chatTokenExpiry != DateTime.MinValue ? _chatTokenExpiry : DateTime.UtcNow,
                     hoursUntilExpiry = hoursUntilExpiry,
+                    daysUntilExpiry = hoursUntilExpiry / 24.0,
                     needsRefresh = hoursUntilExpiry < 1,
                     status = isValid ?
                         (hoursUntilExpiry < 1 ? "EXPIRES_SOON" : "VALID") :
@@ -346,7 +347,6 @@ namespace TwitchSummonSystem.Services
                 };
 
                 LogDebug($"Chat Token Status: {status.status} ({hoursUntilExpiry:F1}h verbleibend)");
-
                 return status;
             }
             catch (Exception ex)
@@ -355,8 +355,9 @@ namespace TwitchSummonSystem.Services
                 return new
                 {
                     valid = false,
-                    expiresAt = DateTime.MinValue,
+                    expiresAt = DateTime.UtcNow,
                     hoursUntilExpiry = 0.0,
+                    daysUntilExpiry = 0.0,
                     needsRefresh = true,
                     status = "ERROR",
                     lastCheck = DateTime.UtcNow,
@@ -364,6 +365,7 @@ namespace TwitchSummonSystem.Services
                 };
             }
         }
+
 
         public async Task<bool> ForceRefreshChatTokenAsync()
         {
