@@ -372,9 +372,8 @@ namespace TwitchSummonSystem.Services
             try
             {
                 LogInfo("=== Manueller Chat Token-Refresh gestartet ===");
-
                 var newToken = await RefreshChatTokenAsync();
-                var success = !string.IsNullOrEmpty(newToken) && newToken != _configuration["Twitch:ChatOAuthToken"];
+                var success = !string.IsNullOrEmpty(newToken); 
 
                 if (success)
                 {
@@ -384,7 +383,6 @@ namespace TwitchSummonSystem.Services
                 {
                     LogWarning("Chat Token-Refresh fehlgeschlagen oder kein neuer Token erhalten");
                 }
-
                 return success;
             }
             catch (Exception ex)
@@ -393,6 +391,7 @@ namespace TwitchSummonSystem.Services
                 return false;
             }
         }
+
 
         public async Task<string> GetDetailedChatTokenInfoAsync()
         {
