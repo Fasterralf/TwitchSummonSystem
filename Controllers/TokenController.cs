@@ -6,12 +6,12 @@ using TwitchSummonSystem.Services;
 public class TokenController : ControllerBase
 {
     private readonly TokenService _tokenService;
-    private readonly ChatTokenService _chatTokenService; 
+    private readonly ChatTokenService _chatTokenService;
 
-    public TokenController(TokenService tokenService, ChatTokenService chatTokenService) 
+    public TokenController(TokenService tokenService, ChatTokenService chatTokenService)
     {
         _tokenService = tokenService;
-        _chatTokenService = chatTokenService; 
+        _chatTokenService = chatTokenService;
     }
 
     [HttpGet("status")]
@@ -20,13 +20,26 @@ public class TokenController : ControllerBase
         try
         {
             var userAppStatus = await _tokenService.GetTokenStatusAsync();
-            var chatStatus = await _chatTokenService.GetChatTokenStatusAsync(); 
+            var chatStatus = await _chatTokenService.GetChatTokenStatusAsync();
+
+            // Sichere Extraktion der Token-Daten
+            var userAppData = userAppStatus as dynamic;
 
             var combinedStatus = new
             {
-                userToken = ((dynamic)userAppStatus).userToken,
-                appToken = ((dynamic)userAppStatus).appToken,
-                chatToken = chatStatus, 
+                userToken = new
+                {
+                    valid = userAppData?.userToken?.valid ?? false,
+                    expiresAt = userAppData?.userToken?.expiresAt ?? DateTime.UtcNow,
+                    daysUntilExpiry = userAppData?.userToken?.daysUntilExpiry ?? 0.0
+                },
+                appToken = new
+                {
+                    valid = userAppData?.appToken?.valid ?? false,
+                    expiresAt = userAppData?.appToken?.expiresAt ?? DateTime.UtcNow,
+                    daysUntilExpiry = userAppData?.appToken?.daysUntilExpiry ?? 0.0
+                },
+                chatToken = chatStatus ?? new { valid = false, error = "Chat token status unavailable" },
                 lastCheck = DateTime.UtcNow
             };
 
@@ -34,7 +47,13 @@ public class TokenController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = ex.Message });
+            return StatusCode(500, new
+            {
+                error = ex.Message,
+                userToken = new { valid = false, expiresAt = DateTime.UtcNow, daysUntilExpiry = 0.0 },
+                appToken = new { valid = false, expiresAt = DateTime.UtcNow, daysUntilExpiry = 0.0 },
+                chatToken = new { valid = false, error = "Service unavailable" }
+            });
         }
     }
 
@@ -44,10 +63,9 @@ public class TokenController : ControllerBase
         try
         {
             var userAppSuccess = await _tokenService.ForceRefreshTokensAsync();
-            var chatSuccess = await _chatTokenService.ForceRefreshChatTokenAsync(); 
+            var chatSuccess = await _chatTokenService.ForceRefreshChatTokenAsync();
 
             var success = userAppSuccess && chatSuccess;
-
             if (success)
             {
                 return Ok(new { message = "Alle Token erfolgreich erneuert" });

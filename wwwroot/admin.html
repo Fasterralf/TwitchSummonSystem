@@ -430,6 +430,19 @@
                     </div>
                 </div>
 
+                <div class="auto-refresh-controls">
+                    <label>
+                        <input type="checkbox" id="autoRefreshTokens" checked>
+                        Auto-Refresh (30s)
+                    </label>
+                    <div class="button-group">
+                        <button class="button secondary" onclick="loadTokenStatus()">🔄 Status</button>
+                        <button class="button success" onclick="forceRefreshTokens()">🔄 Erneuern</button>
+                        <button class="button" onclick="debugTokenStatus()">🔍 Debug</button>
+                    </div>
+                </div>
+
+
                 <!-- Ergänze nach dem Token Dashboard eine neue Chat-Sektion: -->
                 <div class="section">
                     <div class="section-header">
@@ -823,12 +836,22 @@
             try {
                 log('🔑 Lade Token-Status...');
                 const response = await fetch('/api/token/status');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
                 const data = await response.json();
+                console.log('Token Status Response:', data); // Debug-Ausgabe
 
                 document.getElementById('lastTokenUpdate').textContent = new Date().toLocaleString('de-DE');
 
-                const userDays = data.userToken.daysUntilExpiry;
-                const appDays = data.appToken.daysUntilExpiry;
+                // Sichere Zugriffe mit Fallback-Werten
+                const userToken = data.userToken || {};
+                const appToken = data.appToken || {};
+
+                const userDays = typeof userToken.daysUntilExpiry === 'number' ? userToken.daysUntilExpiry : 0;
+                const appDays = typeof appToken.daysUntilExpiry === 'number' ? appToken.daysUntilExpiry : 0;
 
                 let userStatus = 'token-status-good';
                 let appStatus = 'token-status-good';
@@ -837,35 +860,44 @@
                 if (userDays < 1) userStatus = 'token-status-error';
                 if (appDays < 1) appStatus = 'token-status-warning';
 
+                // Sichere Datum-Formatierung
+                const userExpiresAt = userToken.expiresAt ? new Date(userToken.expiresAt).toLocaleString('de-DE') : 'Unbekannt';
+                const appExpiresAt = appToken.expiresAt ? new Date(appToken.expiresAt).toLocaleString('de-DE') : 'Unbekannt';
+
                 document.getElementById('tokenStatus').innerHTML = `
-                        <div class="token-card ${userStatus}">
-                            <h4>👤 User Access Token</h4>
-                            <p><strong>Status:</strong> ${data.userToken.valid ? '✅ Gültig' : '❌ Ungültig'}</p>
-                            <p><strong>Läuft ab:</strong> ${new Date(data.userToken.expiresAt).toLocaleString('de-DE')}</p>
-                            <p><strong>Verbleibend:</strong> ${userDays.toFixed(1)} Tage</p>
-                        </div>
-                        <div class="token-card ${appStatus}">
-                            <h4>🤖 App Access Token</h4>
-                            <p><strong>Läuft ab:</strong> ${new Date(data.appToken.expiresAt).toLocaleString('de-DE')}</p>
-                            <p><strong>Verbleibend:</strong> ${appDays.toFixed(1)} Tage</p>
-                            <p><strong>Auto-Refresh:</strong> ✅ Aktiviert</p>
-                        </div>
-                    `;
+            <div class="token-card ${userStatus}">
+                <h4>👤 User Access Token</h4>
+                <p><strong>Status:</strong> ${userToken.valid ? '✅ Gültig' : '❌ Ungültig'}</p>
+                <p><strong>Läuft ab:</strong> ${userExpiresAt}</p>
+                <p><strong>Verbleibend:</strong> ${userDays.toFixed(1)} Tage</p>
+            </div>
+            <div class="token-card ${appStatus}">
+                <h4>🤖 App Access Token</h4>
+                <p><strong>Status:</strong> ${appToken.valid ? '✅ Gültig' : '❌ Ungültig'}</p>
+                <p><strong>Läuft ab:</strong> ${appExpiresAt}</p>
+                <p><strong>Verbleibend:</strong> ${appDays.toFixed(1)} Tage</p>
+                <p><strong>Auto-Refresh:</strong> ✅ Aktiviert</p>
+            </div>
+        `;
 
                 const nextCheck = new Date(Date.now() + 30000);
                 document.getElementById('nextTokenCheck').textContent = nextCheck.toLocaleTimeString('de-DE');
 
                 log(`✅ Token-Status geladen - User: ${userDays.toFixed(1)}d, App: ${appDays.toFixed(1)}d`);
+
             } catch (error) {
+                console.error('Token Status Error:', error);
                 document.getElementById('tokenStatus').innerHTML = `
-                        <div class="token-card token-status-error">
-                            <h4>❌ Fehler beim Laden</h4>
-                            <p>${error.message}</p>
-                        </div>
-                    `;
+            <div class="token-card token-status-error">
+                <h4>❌ Fehler beim Laden</h4>
+                <p>Fehler: ${error.message}</p>
+                <p>Überprüfe die Token-Services und API-Verbindung.</p>
+            </div>
+        `;
                 log(`❌ Token-Status Fehler: ${error.message}`);
             }
         }
+
 
         async function forceRefreshTokens() {
             try {
@@ -1013,6 +1045,27 @@
                 log('❌ Chat Auto-Refresh deaktiviert');
             }
         }
+
+        // Debug-Funktion für Token-Status
+        async function debugTokenStatus() {
+            try {
+                const response = await fetch('/api/token/status');
+                const data = await response.json();
+                console.log('=== TOKEN DEBUG ===');
+                console.log('Full Response:', data);
+                console.log('User Token:', data.userToken);
+                console.log('App Token:', data.appToken);
+                console.log('Chat Token:', data.chatToken);
+                console.log('==================');
+
+                // Zeige die Rohdaten im Log
+                log(`🔍 Debug: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                console.error('Debug Error:', error);
+                log(`❌ Debug Fehler: ${error.message}`);
+            }
+        }
+
 
         // Auto-refresh stats every 30 seconds
         setInterval(loadStats, 30000);
