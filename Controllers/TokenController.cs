@@ -22,8 +22,9 @@ public class TokenController : ControllerBase
             var userAppStatus = await _tokenService.GetTokenStatusAsync();
             var chatStatus = await _chatTokenService.GetChatTokenStatusAsync();
 
-            // Sichere Extraktion der Token-Daten
-            var userAppData = userAppStatus as dynamic;
+            // Sichere Extraktion der Token-Daten mit korrekten Property-Namen
+            dynamic userAppData = userAppStatus;
+            dynamic chatData = chatStatus;
 
             var combinedStatus = new
             {
@@ -31,15 +32,24 @@ public class TokenController : ControllerBase
                 {
                     valid = userAppData?.userToken?.valid ?? false,
                     expiresAt = userAppData?.userToken?.expiresAt ?? DateTime.UtcNow,
-                    daysUntilExpiry = userAppData?.userToken?.daysUntilExpiry ?? 0.0
+                    // Konvertiere hoursUntilExpiry zu daysUntilExpiry für User Token
+                    daysUntilExpiry = (userAppData?.userToken?.hoursUntilExpiry ?? 0.0) / 24.0
                 },
                 appToken = new
                 {
                     valid = userAppData?.appToken?.valid ?? false,
                     expiresAt = userAppData?.appToken?.expiresAt ?? DateTime.UtcNow,
+                    // App Token hat bereits daysUntilExpiry
                     daysUntilExpiry = userAppData?.appToken?.daysUntilExpiry ?? 0.0
                 },
-                chatToken = chatStatus ?? new { valid = false, error = "Chat token status unavailable" },
+                chatToken = new
+                {
+                    valid = chatData?.valid ?? false,
+                    expiresAt = chatData?.expiresAt ?? DateTime.UtcNow,
+                    // Konvertiere hoursUntilExpiry zu daysUntilExpiry für Chat Token
+                    daysUntilExpiry = (chatData?.hoursUntilExpiry ?? 0.0) / 24.0,
+                    error = chatData?.error
+                },
                 lastCheck = DateTime.UtcNow
             };
 
@@ -52,7 +62,7 @@ public class TokenController : ControllerBase
                 error = ex.Message,
                 userToken = new { valid = false, expiresAt = DateTime.UtcNow, daysUntilExpiry = 0.0 },
                 appToken = new { valid = false, expiresAt = DateTime.UtcNow, daysUntilExpiry = 0.0 },
-                chatToken = new { valid = false, error = "Service unavailable" }
+                chatToken = new { valid = false, error = "Service unavailable", daysUntilExpiry = 0.0 }
             });
         }
     }
@@ -66,6 +76,7 @@ public class TokenController : ControllerBase
             var chatSuccess = await _chatTokenService.ForceRefreshChatTokenAsync();
 
             var success = userAppSuccess && chatSuccess;
+
             if (success)
             {
                 return Ok(new { message = "Alle Token erfolgreich erneuert" });
