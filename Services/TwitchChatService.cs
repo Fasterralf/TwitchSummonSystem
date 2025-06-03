@@ -1,4 +1,5 @@
-﻿using TwitchLib.Client;
+﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
+using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
@@ -11,39 +12,107 @@ namespace TwitchSummonSystem.Services
     {
         private readonly IConfiguration _configuration;
         private readonly LotteryService _lotteryService;
-        private readonly ChatTokenService _chatTokenService; // ← Neu
-        private TwitchClient _client = null!;
-
+        private readonly ChatTokenService _chatTokenService;
+        private TwitchClient? _client;
         private bool _isConnected = false;
+        private bool _isReconnecting = false;
         private DateTime _lastConnectionAttempt = DateTime.MinValue;
         private int _reconnectAttempts = 0;
         private readonly int _maxReconnectAttempts = 5;
+        private readonly SemaphoreSlim _reconnectSemaphore = new(1, 1);
+        private readonly Timer _healthCheckTimer;
 
-        // ← Logging Helper hinzufügen:
+        // Logging Helper
         private void LogInfo(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ℹ️ [CHAT] {message}");
         private void LogSuccess(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ✅ [CHAT] {message}");
         private void LogError(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ [CHAT] {message}");
+
+        public bool IsConnected => _isConnected && (_client?.IsConnected ?? false);
 
         public TwitchChatService(IConfiguration configuration, LotteryService lotteryService, ChatTokenService chatTokenService)
         {
             _configuration = configuration;
             _lotteryService = lotteryService;
-            _chatTokenService = chatTokenService; // ← Neu
-            _ = Task.Run(async () => await InitializeChatBot());
+            _chatTokenService = chatTokenService;
 
+            // Health Check Timer - prüft alle 30 Sekunden
+            _healthCheckTimer = new Timer(HealthCheck, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+
+            // Initialisierung verzögert starten
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(2000); // Kurz warten bis andere Services bereit sind
+                await InitializeChatBot();
+            });
         }
 
         private async Task InitializeChatBot()
         {
             try
             {
+                LogInfo("Initialisiere Chat Bot...");
+
                 var channelName = _configuration["Twitch:ChannelName"];
                 var botUsername = _configuration["Twitch:BotUsername"];
-                var chatToken = await _chatTokenService.GetChatTokenAsync(); // ← Verwende ChatTokenService
+
+                if (string.IsNullOrEmpty(channelName) || string.IsNullOrEmpty(botUsername))
+                {
+                    LogError("Channel Name oder Bot Username nicht konfiguriert");
+                    return;
+                }
+
+                var chatToken = await _chatTokenService.GetChatTokenAsync();
+                if (string.IsNullOrEmpty(chatToken))
+                {
+                    LogError("Kein Chat Token verfügbar");
+                    return;
+                }
 
                 Console.WriteLine($"🤖 Initialisiere Chat Bot für Kanal: {channelName}");
                 Console.WriteLine($"🔑 Chat Token: {chatToken[..15]}...");
 
+                await CreateAndConnectClient(botUsername, chatToken, channelName);
+            }
+            catch (Exception ex)
+            {
+                LogError($"Chat Bot Initialisierung fehlgeschlagen: {ex.Message}");
+                // Retry nach 10 Sekunden
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(10000);
+                    await InitializeChatBot();
+                });
+            }
+        }
+
+        private async Task CreateAndConnectClient(string botUsername, string chatToken, string channelName)
+        {
+            try
+            {
+                // Alte Verbindung sauber trennen
+                if (_client != null)
+                {
+                    try
+                    {
+                        _client.OnConnected -= OnConnected;
+                        _client.OnJoinedChannel -= OnJoinedChannel;
+                        _client.OnMessageReceived -= OnMessageReceived;
+                        _client.OnDisconnected -= OnDisconnected;
+
+                        if (_client.IsConnected)
+                        {
+                            _client.Disconnect();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError($"Fehler beim Trennen der alten Verbindung: {ex.Message}");
+                    }
+
+                    await Task.Delay(1000); // Kurz warten
+                }
+
+                // Neuen Client erstellen
                 var clientOptions = new ClientOptions
                 {
                     MessagesAllowedInPeriod = 750,
@@ -56,26 +125,38 @@ namespace TwitchSummonSystem.Services
                 var credentials = new ConnectionCredentials(botUsername, chatToken);
                 _client.Initialize(credentials, channelName);
 
+                // Event Handler registrieren
                 _client.OnConnected += OnConnected;
                 _client.OnJoinedChannel += OnJoinedChannel;
                 _client.OnMessageReceived += OnMessageReceived;
                 _client.OnDisconnected += OnDisconnected;
 
+                // Verbindung herstellen
                 _client.Connect();
 
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(2000);
-                    if (_client.IsConnected)
-                    {
-                        Console.WriteLine("✅ Chat Bot ist bereit für Nachrichten");
-                    }
-                });
+                // Warten auf Verbindung mit Timeout
+                var timeout = TimeSpan.FromSeconds(15);
+                var startTime = DateTime.Now;
 
+                while (!(_client?.IsConnected ?? false) && DateTime.Now - startTime < timeout)
+                {
+                    await Task.Delay(500);
+                }
+
+                if (_client?.IsConnected ?? false)
+                {
+                    LogSuccess("Chat Bot erfolgreich verbunden!");
+                }
+                else
+                {
+                    LogError("Chat Bot Verbindung Timeout");
+                    throw new TimeoutException("Chat Bot Verbindung Timeout");
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Chat Bot Fehler: {ex.Message}");
+                LogError($"Client Erstellung/Verbindung fehlgeschlagen: {ex.Message}");
+                throw;
             }
         }
 
@@ -89,6 +170,16 @@ namespace TwitchSummonSystem.Services
         private void OnJoinedChannel(object? sender, OnJoinedChannelArgs e)
         {
             Console.WriteLine($"✅ Chat Bot ist Kanal {e.Channel} beigetreten");
+
+            // Zusätzliche Bestätigung nach dem Channel Join
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(2000);
+                if (_client?.IsConnected ?? false)
+                {
+                    Console.WriteLine("✅ Chat Bot ist bereit für Nachrichten");
+                }
+            });
         }
 
         private void OnDisconnected(object? sender, OnDisconnectedEventArgs e)
@@ -96,12 +187,15 @@ namespace TwitchSummonSystem.Services
             LogError("Chat Bot getrennt");
             _isConnected = false;
 
-            // Auto-Reconnect nach 5 Sekunden
-            _ = Task.Run(async () =>
+            // Auto-Reconnect nur wenn nicht bereits am reconnecten
+            if (!_isReconnecting)
             {
-                await Task.Delay(5000);
-                await ReconnectAsync();
-            });
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(5000);
+                    await ReconnectAsync();
+                });
+            }
         }
 
         private void OnMessageReceived(object? sender, OnMessageReceivedArgs e)
@@ -131,34 +225,42 @@ namespace TwitchSummonSystem.Services
 
         public void SendSummonResult(string username, bool isGold, int pityCount)
         {
-            var random = new Random();
+            // Prüfen ob verbunden vor dem Senden
+            if (!IsConnected)
+            {
+                LogError("Kann Summon Result nicht senden - Chat nicht verbunden");
+                // Versuche Reconnect
+                _ = Task.Run(ReconnectAsync);
+                return;
+            }
 
+            var random = new Random();
             if (isGold)
             {
                 var goldMessages = new[]
                 {
-            $"🌟✨ LEGENDARY! ✨🌟 @{username} hat GOLD erhalten! ⭐🎉😱🎊",
-            $"🔥⚡ AMAZING! ⚡🔥 @{username} ist der GOLD Champion! 🌟😍🎊⭐",
-            $"🎊🌟 INCREDIBLE! 🌟🎊 @{username} hat das LEGENDARY GOLD! ⭐✨🤯🔥",
-            $"⭐🎉 FANTASTIC! 🎉⭐ @{username} hat GOLD gesummoned! 🌟💫🏆😎",
-            $"🔥🌟 GODLIKE! 🌟🔥 @{username} mit dem LEGENDARY Pull! ⭐🤩🎊✨",
-            $"🎊⚡ INSANE! ⚡🎊 @{username} ist ein GOLD Legend! 🌟😤💫⭐"
-        };
+                    $"🌟✨ LEGENDARY! ✨🌟 @{username} hat GOLD erhalten! ⭐🎉😱🎊",
+                    $"🔥⚡ AMAZING! ⚡🔥 @{username} ist der GOLD Champion! 🌟😍🎊⭐",
+                    $"🎊🌟 INCREDIBLE! 🌟🎊 @{username} hat das LEGENDARY GOLD! ⭐✨🤯🔥",
+                    $"⭐🎉 FANTASTIC! 🎉⭐ @{username} hat GOLD gesummoned! 🌟💫🏆😎",
+                    $"🔥🌟 GODLIKE! 🌟🔥 @{username} mit dem LEGENDARY Pull! ⭐🤩🎊✨",
+                    $"🎊⚡ INSANE! ⚡🎊 @{username} ist ein GOLD Legend! 🌟😤💫⭐"
+                };
                 SendMessage(goldMessages[random.Next(goldMessages.Length)]);
             }
             else
             {
                 var normalMessages = new[]
                 {
-            $"🎲 @{username} Normal Summon - Bis zum nächsten Stream! 💪✨😔",
-            $"🎯 @{username} Kein Gold heute - Nächster Stream, neue Chance! ⭐😅",
-            $"🎮 @{username} Normal Hit - Stream Summon verbraucht! 🔥 See you next time! 👋😊",
-            $"🎲 @{username} Nicht heute - Aber nächsten Stream wieder! 🌟😬💪",
-            $"🎯 @{username} Normal Summon - Nächster Stream = neue Hoffnung! 🚀🤞⭐",
-            $"🎮 @{username} Kein Glück heute - nächster Stream wird's besser! 💪😤🌟",
-            $"🎲 @{username} Stream Summon done - Next stream, next chance! ✨👍👋",
-            $"🎯 @{username} Normal - Aber hey, nächster Stream wartet! 🚀😉⭐"
-        };
+                    $"🎲 @{username} Normal Summon - Bis zum nächsten Stream! 💪✨😔",
+                    $"🎯 @{username} Kein Gold heute - Nächster Stream, neue Chance! ⭐😅",
+                    $"🎮 @{username} Normal Hit - Stream Summon verbraucht! 🔥 See you next time! 👋😊",
+                    $"🎲 @{username} Nicht heute - Aber nächsten Stream wieder! 🌟😬💪",
+                    $"🎯 @{username} Normal Summon - Nächster Stream = neue Hoffnung! 🚀🤞⭐",
+                    $"🎮 @{username} Kein Glück heute - nächster Stream wird's besser! 💪😤🌟",
+                    $"🎲 @{username} Stream Summon done - Next stream, next chance! ✨👍👋",
+                    $"🎯 @{username} Normal - Aber hey, nächster Stream wartet! 🚀😉⭐"
+                };
                 SendMessage(normalMessages[random.Next(normalMessages.Length)]);
             }
         }
@@ -167,6 +269,12 @@ namespace TwitchSummonSystem.Services
         {
             try
             {
+                if (!IsConnected)
+                {
+                    LogError("Kann Nachricht nicht senden - Chat nicht verbunden");
+                    return;
+                }
+
                 var channelName = _configuration["Twitch:ChannelName"];
                 _client?.SendMessage(channelName, message);
                 Console.WriteLine($"💬 Chat: {message}");
@@ -177,22 +285,21 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-        // Ändere diese Methode (entferne async/await da nicht benötigt):
         public Task<object> GetChatStatusAsync()
         {
             try
             {
                 var channelName = _configuration["Twitch:ChannelName"];
                 var botUsername = _configuration["Twitch:BotUsername"];
-
                 var result = new
                 {
-                    connected = _isConnected && (_client?.IsConnected ?? false),
+                    connected = IsConnected,
                     channel = channelName,
                     botUsername = botUsername,
                     reconnectAttempts = _reconnectAttempts,
                     maxReconnectAttempts = _maxReconnectAttempts,
                     lastConnectionAttempt = _lastConnectionAttempt,
+                    isReconnecting = _isReconnecting,
                     configuration = new
                     {
                         channelNameSet = !string.IsNullOrEmpty(channelName),
@@ -212,23 +319,13 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-
         public async Task<bool> ForceReconnectAsync()
         {
             try
             {
                 LogInfo("=== Manueller Chat-Reconnect gestartet ===");
-
-                if (_client?.IsConnected == true)
-                {
-                    _client.Disconnect();
-                    await Task.Delay(2000);
-                }
-
-                _reconnectAttempts = 0;
-                await ReconnectAsync();
-
-                return _isConnected;
+                _reconnectAttempts = 0; // Reset für manuellen Reconnect
+                return await ReconnectAsync();
             }
             catch (Exception ex)
             {
@@ -237,19 +334,27 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-        private async Task ReconnectAsync()
+        private async Task<bool> ReconnectAsync()
         {
-            if (_reconnectAttempts >= _maxReconnectAttempts)
+            if (_isReconnecting)
             {
-                LogError($"Maximale Reconnect-Versuche erreicht ({_maxReconnectAttempts})");
-                return;
+                LogInfo("Reconnect bereits in Bearbeitung...");
+                return false;
             }
 
+            await _reconnectSemaphore.WaitAsync();
             try
             {
+                _isReconnecting = true;
+
+                if (_reconnectAttempts >= _maxReconnectAttempts)
+                {
+                    LogError($"Maximale Reconnect-Versuche erreicht ({_maxReconnectAttempts})");
+                    return false;
+                }
+
                 _reconnectAttempts++;
                 _lastConnectionAttempt = DateTime.UtcNow;
-
                 LogInfo($"Reconnect-Versuch {_reconnectAttempts}/{_maxReconnectAttempts}...");
 
                 var channelName = _configuration["Twitch:ChannelName"];
@@ -259,37 +364,96 @@ namespace TwitchSummonSystem.Services
                 if (string.IsNullOrEmpty(chatToken))
                 {
                     LogError("Kein Chat Token verfügbar für Reconnect");
-                    return;
+                    return false;
                 }
 
-                var credentials = new ConnectionCredentials(botUsername, chatToken);
-                _client.Initialize(credentials, channelName);
-                _client.Connect();
+                await CreateAndConnectClient(botUsername, chatToken, channelName);
 
-                // Warte kurz und prüfe Verbindung
-                await Task.Delay(3000);
-
-                if (_client.IsConnected)
+                if (IsConnected)
                 {
                     LogSuccess("Reconnect erfolgreich!");
-                    _isConnected = true;
                     _reconnectAttempts = 0;
+                    return true;
                 }
                 else
                 {
                     LogError("Reconnect fehlgeschlagen - Client nicht verbunden");
-                    // Nächster Versuch in 10 Sekunden
-                    await Task.Delay(10000);
-                    _ = Task.Run(ReconnectAsync);
+
+                    // Nächster Versuch mit exponential backoff
+                    var delay = Math.Min(10000 * _reconnectAttempts, 60000); // Max 60 Sekunden
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(delay);
+                        await ReconnectAsync();
+                    });
+
+                    return false;
                 }
             }
             catch (Exception ex)
             {
                 LogError($"Reconnect-Fehler: {ex.Message}");
-                // Nächster Versuch in 15 Sekunden
-                await Task.Delay(15000);
-                _ = Task.Run(ReconnectAsync);
+
+                // Nächster Versuch mit exponential backoff
+                var delay = Math.Min(15000 * _reconnectAttempts, 120000); // Max 2 Minuten
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(delay);
+                    await ReconnectAsync();
+                });
+
+                return false;
+            }
+            finally
+            {
+                _isReconnecting = false;
+                _reconnectSemaphore.Release();
+            }
+        }
+
+        // Health Check Timer Callback
+        private void HealthCheck(object? state)
+        {
+            try
+            {
+                if (!IsConnected && !_isReconnecting)
+                {
+                    LogInfo("Health Check: Verbindung verloren - starte Reconnect");
+                    _ = Task.Run(ReconnectAsync);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError($"Health Check Fehler: {ex.Message}");
+            }
+        }
+
+        // Dispose Pattern für saubere Ressourcen-Freigabe
+        public void Dispose()
+        {
+            try
+            {
+                _healthCheckTimer?.Dispose();
+                _reconnectSemaphore?.Dispose();
+
+                if (_client != null)
+                {
+                    _client.OnConnected -= OnConnected;
+                    _client.OnJoinedChannel -= OnJoinedChannel;
+                    _client.OnMessageReceived -= OnMessageReceived;
+                    _client.OnDisconnected -= OnDisconnected;
+
+                    if (_client.IsConnected)
+                    {
+                        _client.Disconnect();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError($"Dispose Fehler: {ex.Message}");
             }
         }
     }
 }
+
