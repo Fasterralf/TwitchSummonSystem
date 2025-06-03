@@ -14,7 +14,7 @@ namespace TwitchSummonSystem.Services
         {
             _httpClient = httpClient;
             _configuration = configuration;
-            _errorWebhookUrl = _configuration["Discord:WebhookUrlError"];
+            _errorWebhookUrl = _configuration["Discord:ErrorWebhookUrl"]; // ✅ RICHTIG
             _webhookUrl = _configuration["Discord:WebhookUrl"];
         }
 
@@ -22,6 +22,9 @@ namespace TwitchSummonSystem.Services
         {
             try
             {
+                // ERROR WEBHOOK URL für System-Nachrichten verwenden!
+                var targetUrl = _errorWebhookUrl ?? _webhookUrl;
+
                 var embed = new
                 {
                     title = "🚀 System gestartet",
@@ -44,11 +47,11 @@ namespace TwitchSummonSystem.Services
                 var json = JsonSerializer.Serialize(payload);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync(_webhookUrl, content);
+                var response = await _httpClient.PostAsync(targetUrl, content); // ✅ ERROR CHANNEL
 
                 if (response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ✅ Startup-Nachricht an Discord gesendet");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ✅ Startup-Nachricht an Discord ERROR Channel gesendet");
                 }
                 else
                 {
@@ -60,7 +63,6 @@ namespace TwitchSummonSystem.Services
                 Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ Discord Startup-Nachricht Fehler: {ex.Message}");
             }
         }
-
 
         public async Task SendErrorNotificationAsync(string errorMessage, string? component = null, Exception? exception = null)
         {
