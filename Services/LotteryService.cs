@@ -200,16 +200,27 @@ namespace TwitchSummonSystem.Services
                 {
                     string json = File.ReadAllText(_dataFilePath);
                     _lotteryData = JsonConvert.DeserializeObject<LotteryData>(json) ?? new LotteryData();
-
                     if (_lotteryData.BaseGoldChance == 0)
                     {
                         _lotteryData.BaseGoldChance = 0.8;
                         _lotteryData.CurrentGoldChance = 0.8;
                     }
                 }
-                catch
+                catch (Exception ex) // ERWEITERN von catch zu catch (Exception ex)
                 {
                     _lotteryData = new LotteryData();
+                    // NEU HINZUFÜGEN:
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _discordService.SendErrorNotificationAsync("Fehler beim Laden der Lottery-Daten - verwende Defaults", "LotteryService", ex);
+                        }
+                        catch
+                        {
+                            // Ignore Discord errors
+                        }
+                    });
                 }
             }
             else
@@ -217,6 +228,7 @@ namespace TwitchSummonSystem.Services
                 _lotteryData = new LotteryData();
             }
         }
+
 
         private void SaveLotteryData()
         {
@@ -228,7 +240,20 @@ namespace TwitchSummonSystem.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Fehler beim Speichern: {ex.Message}");
+                // NEU HINZUFÜGEN:
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _discordService.SendErrorNotificationAsync("Kritischer Fehler beim Speichern der Lottery-Daten!", "LotteryService", ex);
+                    }
+                    catch
+                    {
+                        // Ignore Discord errors
+                    }
+                });
             }
         }
+
     }
 }

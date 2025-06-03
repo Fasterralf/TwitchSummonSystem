@@ -10,6 +10,7 @@ namespace TwitchSummonSystem.Services
     public class TwitchEventSubService
     {
         private readonly LotteryService _lotteryService;
+        private readonly DiscordService _discordService;
         private readonly IHubContext<SummonHub> _hubContext;
         private readonly IConfiguration _configuration;
         private readonly TokenService _tokenService;
@@ -27,13 +28,15 @@ namespace TwitchSummonSystem.Services
             IHubContext<SummonHub> hubContext, 
             IConfiguration configuration, 
             TokenService tokenService,
-            TwitchChatService chatService)
+            TwitchChatService chatService,
+            DiscordService discordService)
         {
             _lotteryService = lotteryService;
             _hubContext = hubContext;
             _configuration = configuration;
             _tokenService = tokenService;
-            _chatService = chatService; 
+            _chatService = chatService;
+            _discordService = discordService;
             _httpClient = new HttpClient();
         }
 
@@ -139,14 +142,39 @@ namespace TwitchSummonSystem.Services
                 else
                 {
                     Console.WriteLine($"❌ EventSub fehlgeschlagen: {response.StatusCode}");
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _discordService.SendErrorNotificationAsync($"EventSub Subscription fehlgeschlagen: {response.StatusCode}", "TwitchEventSubService", null);
+                        }
+                        catch
+                        {
+                            // Ignore Discord errors
+                        }
+                    });
                     return false;
                 }
+
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ EventSub Fehler: {ex.Message}");
+                // NEU HINZUFÜGEN:
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _discordService.SendErrorNotificationAsync("EventSub Service Exception!", "TwitchEventSubService", ex);
+                    }
+                    catch
+                    {
+                        // Ignore Discord errors
+                    }
+                });
                 return false;
             }
+
         }
 
         public async Task<SummonResult> HandleChannelPointRedemption(JsonElement eventData)

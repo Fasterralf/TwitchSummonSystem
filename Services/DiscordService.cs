@@ -7,13 +7,134 @@ namespace TwitchSummonSystem.Services
     {
         private readonly IConfiguration _configuration;
         private readonly HttpClient _httpClient;
+        private readonly string? _errorWebhookUrl;
         private readonly string? _webhookUrl;
 
         public DiscordService(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
             _configuration = configuration;
+            _errorWebhookUrl = _configuration["Discord:WebhookUrlError"];
             _webhookUrl = _configuration["Discord:WebhookUrl"];
+        }
+
+        public async Task SendStartupNotificationAsync()
+        {
+            try
+            {
+                var embed = new
+                {
+                    title = "🚀 System gestartet",
+                    description = "TwitchSummonSystem wurde erfolgreich gestartet",
+                    color = 65280, // Grün
+                    timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    fields = new[]
+                    {
+                new { name = "Status", value = "✅ Online", inline = true },
+                new { name = "Startzeit", value = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"), inline = true },
+                new { name = "Services", value = "Discord ✅\nToken Management ✅\nChat Bot ✅", inline = false }
+            }
+                };
+
+                var payload = new
+                {
+                    embeds = new[] { embed }
+                };
+
+                var json = JsonSerializer.Serialize(payload);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.PostAsync(_webhookUrl, content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ✅ Startup-Nachricht an Discord gesendet");
+                }
+                else
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ⚠️ Discord Startup-Nachricht fehlgeschlagen: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ Discord Startup-Nachricht Fehler: {ex.Message}");
+            }
+        }
+
+
+        public async Task SendErrorNotificationAsync(string errorMessage, string? component = null, Exception? exception = null)
+        {
+            if (string.IsNullOrEmpty(_errorWebhookUrl))
+            {
+                Console.WriteLine("⚠️ Discord Error Webhook URL nicht konfiguriert");
+                return;
+            }
+
+            try
+            {
+                var embed = new
+                {
+                    embeds = new[]
+                    {
+                        new
+                        {
+                            title = "🚨 SYSTEM ERROR",
+                            description = $"**Fehler aufgetreten:** {errorMessage}",
+                            color = 15158332, // Rot
+                            fields = new List<object>
+                            {
+                                new
+                                {
+                                    name = "⏰ Zeitpunkt",
+                                    value = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
+                                    inline = true
+                                }
+                            }.Concat(component != null ? new[]
+                            {
+                                new
+                                {
+                                    name = "🔧 Komponente",
+                                    value = component,
+                                    inline = true
+                                }
+                            } : Array.Empty<object>())
+                            .Concat(exception != null ? new[]
+                            {
+                                new
+                                {
+                                    name = "📋 Exception Details",
+                                    value = $"```{exception.GetType().Name}: {exception.Message}```",
+                                    inline = false
+                                }
+                            } : Array.Empty<object>())
+                            .ToArray(),
+                            thumbnail = new
+                            {
+                                url = "https://cdn.discordapp.com/attachments/1166234116046100520/1166234120501684224/error.png"
+                            },
+                            timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                        }
+                    }
+                };
+
+                var json = JsonSerializer.Serialize(embed);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.PostAsync(_errorWebhookUrl, content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"✅ Discord Error Benachrichtigung gesendet");
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Discord Error Webhook Fehler: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Discord Error Service Fehler: {ex.Message}");
+            }
         }
 
         public async Task SendGoldNotificationAsync(string username, double goldChance, int totalSummons, int totalGolds)

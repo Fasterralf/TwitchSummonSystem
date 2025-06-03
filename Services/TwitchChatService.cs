@@ -13,6 +13,7 @@ namespace TwitchSummonSystem.Services
         private readonly IConfiguration _configuration;
         private readonly LotteryService _lotteryService;
         private readonly ChatTokenService _chatTokenService;
+        private readonly DiscordService _discordService;
         private TwitchClient? _client;
         private bool _isConnected = false;
         private bool _isReconnecting = false;
@@ -29,11 +30,12 @@ namespace TwitchSummonSystem.Services
 
         public bool IsConnected => _isConnected && (_client?.IsConnected ?? false);
 
-        public TwitchChatService(IConfiguration configuration, LotteryService lotteryService, ChatTokenService chatTokenService)
+        public TwitchChatService(IConfiguration configuration, LotteryService lotteryService, ChatTokenService chatTokenService, DiscordService discordService)
         {
             _configuration = configuration;
             _lotteryService = lotteryService;
             _chatTokenService = chatTokenService;
+            _discordService = discordService;
 
             // Health Check Timer - prüft alle 30 Sekunden
             _healthCheckTimer = new Timer(HealthCheck, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
@@ -76,6 +78,7 @@ namespace TwitchSummonSystem.Services
             catch (Exception ex)
             {
                 LogError($"Chat Bot Initialisierung fehlgeschlagen: {ex.Message}");
+                await _discordService.SendErrorNotificationAsync("Chat Bot Verbindung Initialisierung fehlgeschlagen", "TwitchChatService", ex);
                 // Retry nach 10 Sekunden
                 _ = Task.Run(async () =>
                 {
@@ -107,6 +110,7 @@ namespace TwitchSummonSystem.Services
                     catch (Exception ex)
                     {
                         LogError($"Fehler beim Trennen der alten Verbindung: {ex.Message}");
+                        await _discordService.SendErrorNotificationAsync("Fehler beim Trennen der alten Verbindung", "TwitchChatService", ex);
                     }
 
                     await Task.Delay(1000); // Kurz warten
@@ -150,12 +154,14 @@ namespace TwitchSummonSystem.Services
                 else
                 {
                     LogError("Chat Bot Verbindung Timeout");
+                    await _discordService.SendErrorNotificationAsync("Chat Bot Verbindung Timeout", "TwitchChatService");
                     throw new TimeoutException("Chat Bot Verbindung Timeout");
                 }
             }
             catch (Exception ex)
             {
                 LogError($"Client Erstellung/Verbindung fehlgeschlagen: {ex.Message}");
+                await _discordService.SendErrorNotificationAsync("Chat Bot Verbindung fehlgeschlagen", "TwitchChatService", ex);
                 throw;
             }
         }
@@ -223,12 +229,13 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-        public void SendSummonResult(string username, bool isGold, int pityCount)
+        public async void SendSummonResult(string username, bool isGold, int pityCount)
         {
             // Prüfen ob verbunden vor dem Senden
             if (!IsConnected)
             {
                 LogError("Kann Summon Result nicht senden - Chat nicht verbunden");
+                await _discordService.SendErrorNotificationAsync("Chat nicht verbunden", "TwitchChatService", new Exception("Chat nicht verbunden"));
                 // Versuche Reconnect
                 _ = Task.Run(ReconnectAsync);
                 return;
@@ -265,7 +272,7 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-        private void SendMessage(string message)
+        private async void SendMessage(string message)
         {
             try
             {
@@ -281,11 +288,12 @@ namespace TwitchSummonSystem.Services
             }
             catch (Exception ex)
             {
+                await _discordService.SendErrorNotificationAsync("Chat Nachricht Fehler", "TwitchChatService", ex);
                 Console.WriteLine($"❌ Chat Nachricht Fehler: {ex.Message}");
             }
         }
 
-        public Task<object> GetChatStatusAsync()
+        public async Task<object> GetChatStatusAsync()
         {
             try
             {
@@ -314,6 +322,7 @@ namespace TwitchSummonSystem.Services
             catch (Exception ex)
             {
                 LogError($"Fehler beim Abrufen des Chat Status: {ex.Message}");
+                await _discordService.SendErrorNotificationAsync("Chat Status Fehler", "TwitchChatService", ex);
                 var errorResult = new { connected = false, error = ex.Message, lastCheck = DateTime.UtcNow };
                 return Task.FromResult<object>(errorResult);
             }
@@ -329,6 +338,7 @@ namespace TwitchSummonSystem.Services
             }
             catch (Exception ex)
             {
+                await _discordService.SendErrorNotificationAsync("Manueller Reconnect Fehler", "TwitchChatService", ex);
                 LogError($"Manueller Reconnect fehlgeschlagen: {ex.Message}");
                 return false;
             }
@@ -349,6 +359,7 @@ namespace TwitchSummonSystem.Services
 
                 if (_reconnectAttempts >= _maxReconnectAttempts)
                 {
+                    await _discordService.SendErrorNotificationAsync("Maximale Reconnect-Versuche erreicht", "TwitchChatService", null);
                     LogError($"Maximale Reconnect-Versuche erreicht ({_maxReconnectAttempts})");
                     return false;
                 }
@@ -367,7 +378,7 @@ namespace TwitchSummonSystem.Services
                     return false;
                 }
 
-                await CreateAndConnectClient(botUsername, chatToken, channelName);
+                await CreateAndConnectClient(botUsername!, chatToken, channelName!);
 
                 if (IsConnected)
                 {
@@ -377,6 +388,7 @@ namespace TwitchSummonSystem.Services
                 }
                 else
                 {
+                    await _discordService.SendErrorNotificationAsync("Reconnect Fehler", "TwitchChatService", null);
                     LogError("Reconnect fehlgeschlagen - Client nicht verbunden");
 
                     // Nächster Versuch mit exponential backoff
@@ -392,6 +404,7 @@ namespace TwitchSummonSystem.Services
             }
             catch (Exception ex)
             {
+                await _discordService.SendErrorNotificationAsync("Reconnect Fehler", "TwitchChatService", ex);
                 LogError($"Reconnect-Fehler: {ex.Message}");
 
                 // Nächster Versuch mit exponential backoff
@@ -424,6 +437,7 @@ namespace TwitchSummonSystem.Services
             }
             catch (Exception ex)
             {
+                
                 LogError($"Health Check Fehler: {ex.Message}");
             }
         }

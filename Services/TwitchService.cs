@@ -14,6 +14,7 @@ namespace TwitchSummonSystem.Services
         private readonly IHubContext<SummonHub> _hubContext;
         private readonly IConfiguration _configuration;
         private readonly TokenService _tokenService;
+        private readonly DiscordService _discordService;
 
         // Logging Helper
         private void LogInfo(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ℹ️ [TWITCH] {message}");
@@ -26,12 +27,14 @@ namespace TwitchSummonSystem.Services
             LotteryService lotteryService,
             IHubContext<SummonHub> hubContext,
             IConfiguration configuration,
-            TokenService tokenService)
+            TokenService tokenService,
+            DiscordService discordService)
         {
             _lotteryService = lotteryService;
             _hubContext = hubContext;
             _configuration = configuration;
             _tokenService = tokenService;
+            _discordService = discordService;
             _twitchApi = new TwitchAPI();
 
             LogInfo("TwitchService wird initialisiert...");
@@ -81,7 +84,20 @@ namespace TwitchSummonSystem.Services
             catch (Exception ex)
             {
                 LogError($"Fehler bei Twitch Service Initialisierung: {ex.Message}");
+                // NEU HINZUFÜGEN:
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _discordService.SendErrorNotificationAsync("Twitch Service Initialisierung fehlgeschlagen!", "TwitchService", ex);
+                    }
+                    catch
+                    {
+                        // Ignore Discord errors
+                    }
+                });
             }
+
         }
 
         private async Task TestApiConnectionAsync()
@@ -169,8 +185,21 @@ namespace TwitchSummonSystem.Services
             catch (Exception ex)
             {
                 LogError($"Fehler beim Verarbeiten des Channel Point Rewards: {ex.Message}");
+                // NEU HINZUFÜGEN:
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _discordService.SendErrorNotificationAsync("Channel Point Reward Verarbeitung fehlgeschlagen!", "TwitchService", ex);
+                    }
+                    catch
+                    {
+                        // Ignore Discord errors
+                    }
+                });
                 return null!;
             }
+
         }
 
         public async Task<string> GetChannelInfoAsync()

@@ -7,6 +7,7 @@ namespace TwitchSummonSystem.Services
     {
         private readonly IConfiguration _configuration;
         private readonly HttpClient _httpClient;
+        private readonly DiscordService _discordService;
         private readonly SemaphoreSlim _rateLimitSemaphore = new(1, 1);
         private DateTime _lastTokenRequest = DateTime.MinValue;
         private readonly TimeSpan _minRequestInterval = TimeSpan.FromSeconds(1);
@@ -22,10 +23,13 @@ namespace TwitchSummonSystem.Services
         private static void LogWarning(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ⚠️ {message}");
         private static void LogError(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ {message}");
         private static void LogDebug(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🔍 {message}");
+        private DateTime _lastStatusLogTime = DateTime.MinValue;
+        private readonly TimeSpan _statusLogInterval = TimeSpan.FromHours(1); // Alle 1 Stunde
 
-        public TokenService(IConfiguration configuration)
+        public TokenService(IConfiguration configuration, DiscordService discordService)
         {
             _configuration = configuration;
+            _discordService = discordService;
             _httpClient = new HttpClient();
             LogInfo("TokenService initialisiert");
             _ = Task.Run(StartTokenMonitoringAsync);
@@ -217,15 +221,38 @@ namespace TwitchSummonSystem.Services
                 {
                     LogError($"Token Refresh fehlgeschlagen: {response.StatusCode}");
                     LogError($"Response: {responseContent}");
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _discordService.SendErrorNotificationAsync("User Token Refresh fehlgeschlagen", "TokenService", null);
+                        }
+                        catch
+                        {
+
+                        }
+                    });
                     return null!;
                 }
             }
             catch (Exception ex)
             {
                 LogError($"Refresh Token Fehler: {ex.Message}");
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _discordService.SendErrorNotificationAsync("User Token Refresh Exception!", "TokenService", ex);
+                    }
+                    catch
+                    {
+                        // Ignore Discord errors
+                    }
+                });
                 return null!;
             }
         }
+
 
         private async Task<string?> LoadRefreshTokenFromFileAsync()
         {
@@ -402,6 +429,17 @@ namespace TwitchSummonSystem.Services
             catch (Exception ex)
             {
                 LogError($"Fehler beim Speichern der Token: {ex.Message}");
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _discordService.SendErrorNotificationAsync("Kritischer Fehler beim Speichern der Token!", "TokenService", ex);
+                    }
+                    catch
+                    {
+                        // Ignore Discord errors
+                    }
+                });
             }
         }
 
@@ -409,7 +447,14 @@ namespace TwitchSummonSystem.Services
         {
             try
             {
-                LogDebug("Erstelle Token Status Report...");
+                // NUR ALLE STUNDE LOGGEN
+                var shouldLog = DateTime.UtcNow - _lastStatusLogTime > _statusLogInterval;
+
+                if (shouldLog)
+                {
+                    LogDebug("Erstelle Token Status Report...");
+                    _lastStatusLogTime = DateTime.UtcNow;
+                }
 
                 // Stelle sicher, dass App Token initialisiert ist
                 if (_appTokenExpiry == DateTime.MinValue || string.IsNullOrEmpty(_cachedAppToken))
@@ -460,7 +505,10 @@ namespace TwitchSummonSystem.Services
                     lastCheck = DateTime.UtcNow
                 };
 
-                LogDebug($"Token Status: User={status.userToken.status} ({userHoursUntilExpiry:F1}h), App={status.appToken.status} ({appDaysUntilExpiry:F1}d)");
+                if (shouldLog)
+                {
+                    LogDebug($"Token Status: User={status.userToken.status} ({userHoursUntilExpiry:F1}h), App={status.appToken.status} ({appDaysUntilExpiry:F1}d)");
+                }
 
                 return status;
             }
