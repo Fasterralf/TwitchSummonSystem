@@ -70,6 +70,36 @@ dotnet restore
 dotnet run
 ```
 
+## 🌐 Webhook Setup (für Twitch EventSub)
+
+Twitch Channel Point Rewards benötigen **öffentlich erreichbare Webhooks**. Du hast mehrere Optionen:
+
+### **Option 1: ngrok (Einfach für Testing)**
+```bash
+# ngrok installieren und starten
+ngrok http 5000
+
+# In anderem Terminal:
+./setup-webhook.sh
+```
+
+### **Option 2: Öffentliche Server-IP**
+```bash
+# Port 5000 öffnen
+sudo ufw allow 5000
+
+# Webhook manuell in Twitch konfigurieren:
+# http://DEINE_SERVER_IP:5000/api/twitch/webhook
+```
+
+### **Option 3: Domain mit Nginx (Production)**
+```bash
+# Nginx Reverse Proxy einrichten
+# Webhook URL: https://deine-domain.com/api/twitch/webhook
+```
+
+⚠️ **Wichtig**: Ohne öffentliche Webhook-URL funktionieren Channel Point Rewards nicht!
+
 ## 🔧 Konfiguration
 
 Kopiere `.env.example` zu `.env` und fülle alle Werte aus:
