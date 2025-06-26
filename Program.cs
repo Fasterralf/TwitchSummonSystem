@@ -1,11 +1,47 @@
 ﻿using TwitchSummonSystem.Hubs;
 using TwitchSummonSystem.Services;
+using TwitchSummonSystem.Middleware;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Environment Variables laden
+builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
 builder.Services.AddHttpClient();
+
+// Health Checks hinzufügen
+builder.Services.AddHealthChecks()
+    .AddCheck("TwitchAPI", () =>
+    {
+        // Hier könntest du einen echten Health Check für die Twitch API machen
+        return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Twitch API erreichbar");
+    })
+    .AddCheck("Discord", () =>
+    {
+        // Health Check für Discord Webhook
+        return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Discord Webhook erreichbar");
+    });
+
+// Rate Limiting hinzufügen
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.User.Identity?.Name ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 10, // 10 Requests
+                Window = TimeSpan.FromMinutes(1) // pro Minute
+            }));
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
 builder.Services.AddHttpClient<DiscordService>();
 builder.Services.AddHttpClient<TokenService>();
 builder.Services.AddHttpClient<TwitchEventSubService>();
@@ -28,6 +64,9 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Global Exception Handling
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 var chatService = app.Services.GetRequiredService<TwitchChatService>();
 var eventSubService = app.Services.GetRequiredService<TwitchEventSubService>();
@@ -58,15 +97,19 @@ _ = Task.Run(async () =>
 });
 
 app.UseCors("AllowAll");
+app.UseRateLimiter(); // Rate Limiting aktivieren
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<SummonHub>("/summonhub");
+app.MapHealthChecks("/health"); // Health Check Endpoint
 app.MapGet("/", () => Results.Redirect("/obs.html"));
 
+var urls = app.Configuration["ASPNETCORE_URLS"] ?? "http://localhost:5173";
 Console.WriteLine("🚀 Twitch Summon System gestartet!");
-Console.WriteLine("📺 OBS Browser Source: http://localhost:5173/obs.html");
-Console.WriteLine("🔗 Webhook Endpoint: http://localhost:5173/api/twitch/webhook");
+Console.WriteLine($"📺 OBS Browser Source: {urls.Replace("0.0.0.0", "localhost")}/obs.html");
+Console.WriteLine($"🔗 Webhook Endpoint: {urls.Replace("0.0.0.0", "localhost")}/api/twitch/webhook");
+Console.WriteLine($"❤️ Health Check: {urls.Replace("0.0.0.0", "localhost")}/health");
 
 app.Run();

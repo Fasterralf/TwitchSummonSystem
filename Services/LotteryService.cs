@@ -9,16 +9,28 @@ namespace TwitchSummonSystem.Services
     public class LotteryService
     {
         private readonly string _dataFilePath = "lottery_data.json";
+        private readonly string _backupDirectory = "lottery_backups";
         private readonly IHubContext<SummonHub> _hubContext;
         private LotteryData _lotteryData = null!;
         private readonly DiscordService _discordService;
         private readonly object _lockObject = new();
+        private readonly Timer _backupTimer;
 
         public LotteryService(IHubContext<SummonHub> hubContext, DiscordService discordService)
         {
             _hubContext = hubContext;
             _discordService = discordService;
+            
+            // Backup Directory erstellen
+            if (!Directory.Exists(_backupDirectory))
+            {
+                Directory.CreateDirectory(_backupDirectory);
+            }
+            
             LoadLotteryData();
+            
+            // Backup Timer - alle 30 Minuten
+            _backupTimer = new Timer(CreateBackup, null, TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(30));
         }
 
         public LotteryData GetLotteryData()
@@ -255,5 +267,54 @@ namespace TwitchSummonSystem.Services
             }
         }
 
+        private void CreateBackup(object? state)
+        {
+            try
+            {
+                lock (_lockObject)
+                {
+                    var backupFileName = $"lottery_backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+                    var backupPath = Path.Combine(_backupDirectory, backupFileName);
+                    
+                    var json = JsonConvert.SerializeObject(_lotteryData, Formatting.Indented);
+                    File.WriteAllText(backupPath, json);
+                    
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 💾 Backup erstellt: {backupFileName}");
+                    
+                    // Alte Backups löschen (behalte nur die letzten 10)
+                    CleanupOldBackups();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ Backup Fehler: {ex.Message}");
+            }
+        }
+
+        private void CleanupOldBackups()
+        {
+            try
+            {
+                var backupFiles = Directory.GetFiles(_backupDirectory, "lottery_backup_*.json")
+                    .Select(f => new FileInfo(f))
+                    .OrderByDescending(f => f.CreationTime)
+                    .Skip(10); // Behalte die neuesten 10
+
+                foreach (var file in backupFiles)
+                {
+                    file.Delete();
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🗑️ Altes Backup gelöscht: {file.Name}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ⚠️ Backup Cleanup Fehler: {ex.Message}");
+            }
+        }
+
+        public void Dispose()
+        {
+            _backupTimer?.Dispose();
+        }
     }
 }
