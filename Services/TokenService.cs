@@ -1,4 +1,4 @@
-Ôªøusing System.Text.Json;
+using System.Text.Json;
 using System.Text;
 
 namespace TwitchSummonSystem.Services
@@ -18,11 +18,11 @@ namespace TwitchSummonSystem.Services
         private DateTime _userTokenExpiry = DateTime.MinValue;
 
         // Logging Helper
-        private static void LogInfo(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ‚ÑπÔ∏è {message}");
-        private static void LogSuccess(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ‚úÖ {message}");
-        private static void LogWarning(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ‚ö†Ô∏è {message}");
-        private static void LogError(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ‚ùå {message}");
-        private static void LogDebug(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] üîç {message}");
+        private static void LogInfo(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ?? {message}");
+        private static void LogSuccess(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ? {message}");
+        private static void LogWarning(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ?? {message}");
+        private static void LogError(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ? {message}");
+        private static void LogDebug(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ?? {message}");
         private DateTime _lastStatusLogTime = DateTime.MinValue;
         private readonly TimeSpan _statusLogInterval = TimeSpan.FromHours(1); // Alle 1 Stunde
 
@@ -37,11 +37,11 @@ namespace TwitchSummonSystem.Services
 
         public async Task<string> GetAppAccessTokenAsync()
         {
-            // Pr√ºfe Cache - App Token ist ~60 Tage g√ºltig, erneuere 1 Tag vorher
+            
             if (!string.IsNullOrEmpty(_cachedAppToken) && DateTime.UtcNow < _appTokenExpiry.AddDays(-1))
             {
                 var remainingTime = _appTokenExpiry - DateTime.UtcNow;
-                LogDebug($"App Token aus Cache verwendet (g√ºltig f√ºr weitere {remainingTime.TotalDays:F1} Tage)");
+                LogDebug($"App Token aus Cache verwendet (g¸ltig f¸r weitere {remainingTime.TotalDays:F1} Tage)");
                 return _cachedAppToken;
             }
 
@@ -83,7 +83,7 @@ namespace TwitchSummonSystem.Services
                     _appTokenExpiry = DateTime.UtcNow.AddSeconds(expiresIn);
 
                     var expiryDays = TimeSpan.FromSeconds(expiresIn).TotalDays;
-                    LogSuccess($"App Token erhalten - g√ºltig f√ºr {expiryDays:F1} Tage bis {_appTokenExpiry:dd.MM.yyyy HH:mm}");
+                    LogSuccess($"App Token erhalten - g¸ltig f¸r {expiryDays:F1} Tage bis {_appTokenExpiry:dd.MM.yyyy HH:mm}");
                     LogDebug($"Token Preview: {accessToken[..Math.Min(10, accessToken.Length)]}...");
 
                     return accessToken;
@@ -107,11 +107,11 @@ namespace TwitchSummonSystem.Services
 
         public async Task<string> GetUserAccessTokenAsync()
         {
-            // User Token ist ~4 Stunden g√ºltig, erneuere 30 Minuten vorher
+            
             if (!string.IsNullOrEmpty(_cachedUserToken) && DateTime.UtcNow < _userTokenExpiry.AddMinutes(-30))
             {
                 var remainingTime = _userTokenExpiry - DateTime.UtcNow;
-                LogDebug($"User Token aus Cache verwendet (g√ºltig f√ºr weitere {remainingTime.TotalHours:F1}h)");
+                LogDebug($"User Token aus Cache verwendet (g¸ltig f¸r weitere {remainingTime.TotalHours:F1}h)");
                 return _cachedUserToken;
             }
 
@@ -128,12 +128,12 @@ namespace TwitchSummonSystem.Services
             {
                 _cachedUserToken = currentToken;
                 var remainingTime = _userTokenExpiry - DateTime.UtcNow;
-                LogSuccess($"User Token validiert - g√ºltig f√ºr weitere {remainingTime.TotalHours:F1}h");
+                LogSuccess($"User Token validiert - g¸ltig f¸r weitere {remainingTime.TotalHours:F1}h");
                 return currentToken!;
             }
 
-            // Token abgelaufen oder l√§uft bald ab
-            LogWarning($"User Token {(isValid ? "l√§uft bald ab" : "ist ung√ºltig")} - erneuere mit Refresh Token");
+            // Token abgelaufen oder l‰uft bald ab
+            LogWarning($"User Token {(isValid ? "l‰uft bald ab" : "ist ung¸ltig")} - erneuere mit Refresh Token");
             return await RefreshUserTokenAsync();
         }
 
@@ -183,7 +183,7 @@ namespace TwitchSummonSystem.Services
 
                 if (string.IsNullOrEmpty(refreshToken))
                 {
-                    LogError("Kein Refresh Token verf√ºgbar!");
+                    LogError("Kein Refresh Token verf¸gbar!");
                     return null!;
                 }
 
@@ -212,7 +212,7 @@ namespace TwitchSummonSystem.Services
                     _userTokenExpiry = DateTime.UtcNow.AddSeconds(expiresIn);
 
                     var expiryHours = TimeSpan.FromSeconds(expiresIn).TotalHours;
-                    LogSuccess($"User Token erneuert - g√ºltig f√ºr {expiryHours:F1}h bis {_userTokenExpiry:dd.MM.yyyy HH:mm}");
+                    LogSuccess($"User Token erneuert - g¸ltig f¸r {expiryHours:F1}h bis {_userTokenExpiry:dd.MM.yyyy HH:mm}");
 
                     await UpdateConfigurationAsync(newAccessToken, newRefreshToken);
                     return newAccessToken;
@@ -313,7 +313,7 @@ namespace TwitchSummonSystem.Services
                     _userTokenExpiry = DateTime.UtcNow.AddSeconds(expiresIn);
 
                     var remainingHours = TimeSpan.FromSeconds(expiresIn).TotalHours;
-                    LogSuccess($"Token g√ºltig f√ºr weitere {remainingHours:F1}h (bis {_userTokenExpiry:dd.MM.yyyy HH:mm})");
+                    LogSuccess($"Token g¸ltig f¸r weitere {remainingHours:F1}h (bis {_userTokenExpiry:dd.MM.yyyy HH:mm})");
 
                     return true;
                 }
@@ -334,7 +334,7 @@ namespace TwitchSummonSystem.Services
 
         private async Task StartTokenMonitoringAsync()
         {
-            LogInfo("Token-√úberwachung gestartet");
+            LogInfo("Token-‹berwachung gestartet");
 
             // Initialisiere App Token beim Start
             try
@@ -351,20 +351,20 @@ namespace TwitchSummonSystem.Services
             {
                 try
                 {
-                    // Pr√ºfe alle 45 Minuten (da User Token nur ~4h g√ºltig ist)
+                    // Pr¸fe alle 45 Minuten (da User Token nur ~4h g¸ltig ist)
                     await Task.Delay(TimeSpan.FromMinutes(45));
 
-                    LogInfo("=== Automatische Token-Pr√ºfung ===");
+                    LogInfo("=== Automatische Token-Pr¸fung ===");
 
-                    // Pr√ºfe User Token - erneuere wenn weniger als 1h verbleibt
+                    
                     if (_userTokenExpiry != DateTime.MinValue)
                     {
                         var userTimeRemaining = _userTokenExpiry - DateTime.UtcNow;
-                        LogDebug($"User Token l√§uft ab in: {userTimeRemaining.TotalHours:F1}h");
+                        LogDebug($"User Token l‰uft ab in: {userTimeRemaining.TotalHours:F1}h");
 
                         if (userTimeRemaining.TotalHours < 1)
                         {
-                            LogWarning("User Token l√§uft in weniger als 1h ab - erneuere jetzt");
+                            LogWarning("User Token l‰uft in weniger als 1h ab - erneuere jetzt");
                             await RefreshUserTokenAsync();
                         }
                     }
@@ -375,15 +375,15 @@ namespace TwitchSummonSystem.Services
                         await ValidateTokenAsync(userToken!);
                     }
 
-                    // Pr√ºfe App Token - erneuere wenn weniger als 7 Tage verbleiben
+                    
                     if (_appTokenExpiry != DateTime.MinValue)
                     {
                         var appTimeRemaining = _appTokenExpiry - DateTime.UtcNow;
-                        LogDebug($"App Token l√§uft ab in: {appTimeRemaining.TotalDays:F1} Tagen");
+                        LogDebug($"App Token l‰uft ab in: {appTimeRemaining.TotalDays:F1} Tagen");
 
                         if (appTimeRemaining.TotalDays < 7)
                         {
-                            LogWarning("App Token l√§uft in weniger als 7 Tagen ab - erneuere jetzt");
+                            LogWarning("App Token l‰uft in weniger als 7 Tagen ab - erneuere jetzt");
                             _cachedAppToken = null; // Cache leeren
                             await GetAppAccessTokenAsync();
                         }
@@ -394,7 +394,7 @@ namespace TwitchSummonSystem.Services
                         await GetAppAccessTokenAsync();
                     }
 
-                    LogSuccess("Automatische Token-Pr√ºfung abgeschlossen");
+                    LogSuccess("Automatische Token-Pr¸fung abgeschlossen");
                 }
                 catch (Exception ex)
                 {
@@ -420,7 +420,7 @@ namespace TwitchSummonSystem.Services
 
                 await File.WriteAllTextAsync(tokenFilePath, json);
                 LogSuccess($"Token gespeichert: {tokenFilePath}");
-                LogDebug($"Token g√ºltig bis: {_userTokenExpiry:dd.MM.yyyy HH:mm}");
+                LogDebug($"Token g¸ltig bis: {_userTokenExpiry:dd.MM.yyyy HH:mm}");
 
                 // Update Configuration in Memory
                 _configuration["Twitch:AccessToken"] = newAccessToken;
@@ -546,12 +546,12 @@ namespace TwitchSummonSystem.Services
             {
                 LogInfo("=== Manueller Token-Refresh gestartet ===");
 
-                // User Token erneuern
+                
                 LogInfo("Erneuere User Token...");
                 var newUserToken = await RefreshUserTokenAsync();
                 var userSuccess = !string.IsNullOrEmpty(newUserToken);
 
-                // App Token erneuern
+                
                 LogInfo("Erneuere App Token...");
                 _cachedAppToken = null; // Cache leeren
                 var newAppToken = await GetAppAccessTokenAsync();
@@ -577,7 +577,7 @@ namespace TwitchSummonSystem.Services
             }
         }
 
-        // Neue Methode f√ºr detaillierte Token-Informationen
+        
         public async Task<string> GetDetailedTokenInfoAsync()
         {
             try
@@ -593,32 +593,32 @@ namespace TwitchSummonSystem.Services
                 info.AppendLine($"Zeitpunkt: {DateTime.Now:dd.MM.yyyy HH:mm:ss}");
                 info.AppendLine();
 
-                info.AppendLine("üîë USER TOKEN:");
+                info.AppendLine("?? USER TOKEN:");
                 info.AppendLine($"   Status: {userToken.GetProperty("status").GetString()}");
-                info.AppendLine($"   G√ºltig: {userToken.GetProperty("valid").GetBoolean()}");
+                info.AppendLine($"   G¸ltig: {userToken.GetProperty("valid").GetBoolean()}");
                 if (userToken.GetProperty("expiresAt").GetDateTime() != DateTime.MinValue)
                 {
-                    info.AppendLine($"   L√§uft ab: {userToken.GetProperty("expiresAt").GetDateTime():dd.MM.yyyy HH:mm}");
+                    info.AppendLine($"   L‰uft ab: {userToken.GetProperty("expiresAt").GetDateTime():dd.MM.yyyy HH:mm}");
                     info.AppendLine($"   Verbleibend: {userToken.GetProperty("hoursUntilExpiry").GetDouble():F1} Stunden");
                 }
-                info.AppendLine($"   Refresh n√∂tig: {userToken.GetProperty("needsRefresh").GetBoolean()}");
+                info.AppendLine($"   Refresh nˆtig: {userToken.GetProperty("needsRefresh").GetBoolean()}");
                 info.AppendLine();
 
-                info.AppendLine("üîë APP TOKEN:");
+                info.AppendLine("?? APP TOKEN:");
                 info.AppendLine($"   Status: {appToken.GetProperty("status").GetString()}");
-                info.AppendLine($"   G√ºltig: {appToken.GetProperty("valid").GetBoolean()}");
+                info.AppendLine($"   G¸ltig: {appToken.GetProperty("valid").GetBoolean()}");
                 if (appToken.GetProperty("expiresAt").GetDateTime() != DateTime.MinValue)
                 {
-                    info.AppendLine($"   L√§uft ab: {appToken.GetProperty("expiresAt").GetDateTime():dd.MM.yyyy HH:mm}");
+                    info.AppendLine($"   L‰uft ab: {appToken.GetProperty("expiresAt").GetDateTime():dd.MM.yyyy HH:mm}");
                     info.AppendLine($"   Verbleibend: {appToken.GetProperty("daysUntilExpiry").GetDouble():F1} Tage");
                 }
-                info.AppendLine($"   Refresh n√∂tig: {appToken.GetProperty("needsRefresh").GetBoolean()}");
+                info.AppendLine($"   Refresh nˆtig: {appToken.GetProperty("needsRefresh").GetBoolean()}");
 
                 return info.ToString();
             }
             catch (Exception ex)
             {
-                return $"‚ùå Fehler beim Erstellen des Token Reports: {ex.Message}";
+                return $"? Fehler beim Erstellen des Token Reports: {ex.Message}";
             }
         }
 

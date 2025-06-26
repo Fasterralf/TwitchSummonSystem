@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using TwitchSummonSystem.Hubs;
 using TwitchSummonSystem.Models;
@@ -49,7 +49,7 @@ namespace TwitchSummonSystem.Controllers
 
             await _hubContext.Clients.All.SendAsync("PityReset", lotteryData);
 
-            return Ok(new { message = "Lottery wurde zurückgesetzt", lotteryData }); 
+            return Ok(new { message = "Lottery wurde zur�ckgesetzt", lotteryData }); 
         }
 
         [HttpGet("stats")]
@@ -74,7 +74,7 @@ namespace TwitchSummonSystem.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Stats Fehler: {ex.Message}");
+                Console.WriteLine($"? Stats error: {ex.Message}");
                 return StatusCode(500, new { error = "Fehler beim Abrufen der Stats" });
             }
         }

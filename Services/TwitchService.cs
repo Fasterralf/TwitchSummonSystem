@@ -1,4 +1,4 @@
-﻿using TwitchLib.Api;
+using TwitchLib.Api;
 using Microsoft.AspNetCore.SignalR;
 using TwitchSummonSystem.Hubs;
 using TwitchSummonSystem.Models;
@@ -37,7 +37,7 @@ namespace TwitchSummonSystem.Services
             _discordService = discordService;
             _twitchApi = new TwitchAPI();
 
-            LogInfo("TwitchService wird initialisiert...");
+            LogInfo("Initializing TwitchService...");
             _ = InitializeAsync();
         }
 
@@ -45,7 +45,7 @@ namespace TwitchSummonSystem.Services
         {
             try
             {
-                LogInfo("Starte Twitch API Initialisierung...");
+                LogInfo("Starting Twitch API initialization...");
 
                 var clientId = _configuration["Twitch:ClientId"];
                 var channelName = _configuration["Twitch:ChannelName"];
@@ -53,13 +53,13 @@ namespace TwitchSummonSystem.Services
 
                 if (string.IsNullOrEmpty(clientId))
                 {
-                    LogError("Twitch ClientId fehlt in Konfiguration!");
+                    LogError("Twitch ClientId missing in configuration!");
                     return;
                 }
 
                 if (string.IsNullOrEmpty(channelName))
                 {
-                    LogError("Twitch ChannelName fehlt in Konfiguration!");
+                    LogError("Twitch ChannelName missing in configuration!");
                     return;
                 }
 
@@ -67,7 +67,7 @@ namespace TwitchSummonSystem.Services
                 var accessToken = await _tokenService.GetUserAccessTokenAsync();
                 if (string.IsNullOrEmpty(accessToken))
                 {
-                    LogError("Kein gültiger Access Token verfügbar!");
+                    LogError("No valid access token available!");
                     return;
                 }
 
@@ -75,8 +75,8 @@ namespace TwitchSummonSystem.Services
                 _twitchApi.Settings.AccessToken = accessToken;
 
                 LogSuccess("Twitch API erfolgreich initialisiert");
-                LogInfo($"📺 Kanal: {channelName} (ID: {channelId ?? "nicht gesetzt"})");
-                LogInfo($"🎁 Summon Reward: {_configuration["Twitch:SummonRewardName"] ?? "nicht gesetzt"}");
+                LogInfo($"?? Kanal: {channelName} (ID: {channelId ?? "nicht gesetzt"})");
+                LogInfo($"?? Summon Reward: {_configuration["Twitch:SummonRewardName"] ?? "nicht gesetzt"}");
 
                 // Teste API-Verbindung
                 await TestApiConnectionAsync();
@@ -84,7 +84,6 @@ namespace TwitchSummonSystem.Services
             catch (Exception ex)
             {
                 LogError($"Fehler bei Twitch Service Initialisierung: {ex.Message}");
-                // NEU HINZUFÜGEN:
                 _ = Task.Run(async () =>
                 {
                     try
@@ -138,7 +137,7 @@ namespace TwitchSummonSystem.Services
         {
             try
             {
-                LogInfo($"🎁 Channel Point Reward erhalten: '{rewardTitle}' von {username}");
+                LogInfo($"?? Channel Point Reward erhalten: '{rewardTitle}' von {username}");
 
                 var summonRewardName = _configuration["Twitch:SummonRewardName"];
 
@@ -148,30 +147,30 @@ namespace TwitchSummonSystem.Services
                     return null!;
                 }
 
-                // Prüfe ob es sich um den Summon Reward handelt
+                // Pr�fe ob es sich um den Summon Reward handelt
                 var isSummonReward = rewardTitle.Contains(summonRewardName, StringComparison.CurrentCultureIgnoreCase) ||
                                    rewardTitle.Contains("test", StringComparison.CurrentCultureIgnoreCase);
 
                 if (isSummonReward)
                 {
-                    LogInfo($"🎲 Führe Summon für {username} aus...");
+                    LogInfo($"?? F�hre Summon f�r {username} aus...");
 
                     var result = _lotteryService.PerformSummon(username);
 
                     // Sende Ergebnis an alle verbundenen Clients
                     await _hubContext.Clients.All.SendAsync("SummonResult", result);
 
-                    var resultText = result.IsGold ? "⭐ GOLD!" : "❌ Kein Gold";
-                    LogSuccess($"🎲 {username}: {resultText} - Pity: {result.PityCount}/80");
+                    var resultText = result.IsGold ? "? GOLD!" : "? Kein Gold";
+                    LogSuccess($"?? {username}: {resultText} - Pity: {result.PityCount}/80");
 
-                    // Zusätzliche Statistiken loggen
+                    // Zus�tzliche Statistiken loggen
                     if (result.IsGold)
                     {
-                        LogInfo($"🏆 Gold nach {result.PityCount} Versuchen! Pity Counter zurückgesetzt.");
+                        LogInfo($"?? Gold nach {result.PityCount} Versuchen! Pity Counter zur�ckgesetzt.");
                     }
                     else if (result.PityCount >= 70)
                     {
-                        LogWarning($"⚠️ Hoher Pity Counter: {result.PityCount}/80 - Gold bald garantiert!");
+                        LogWarning($"?? Hoher Pity Counter: {result.PityCount}/80 - Gold bald garantiert!");
                     }
 
                     return result;
@@ -185,7 +184,6 @@ namespace TwitchSummonSystem.Services
             catch (Exception ex)
             {
                 LogError($"Fehler beim Verarbeiten des Channel Point Rewards: {ex.Message}");
-                // NEU HINZUFÜGEN:
                 _ = Task.Run(async () =>
                 {
                     try
@@ -211,7 +209,7 @@ namespace TwitchSummonSystem.Services
 
                 if (string.IsNullOrEmpty(channelName))
                 {
-                    return "❌ Kanal nicht konfiguriert";
+                    return "? Kanal nicht konfiguriert";
                 }
 
                 // Versuche aktuelle Kanal-Informationen zu holen
@@ -221,7 +219,7 @@ namespace TwitchSummonSystem.Services
                     if (users?.Users?.Length > 0)
                     {
                         var user = users.Users[0];
-                        return $"📺 Kanal: {user.DisplayName} (ID: {user.Id}) - Status: ✅ Verbunden";
+                        return $"?? Kanal: {user.DisplayName} (ID: {user.Id}) - Status: ? Verbunden";
                     }
                 }
                 catch (Exception ex)
@@ -229,12 +227,12 @@ namespace TwitchSummonSystem.Services
                     LogWarning($"Fehler beim Abrufen der Kanal-Informationen: {ex.Message}");
                 }
 
-                return $"📺 Kanal: {channelName} (ID: {channelId ?? "unbekannt"}) - Status: ⚠️ Nicht erreichbar";
+                return $"?? Kanal: {channelName} (ID: {channelId ?? "unbekannt"}) - Status: ?? Nicht erreichbar";
             }
             catch (Exception ex)
             {
                 LogError($"Fehler beim Abrufen der Kanal-Informationen: {ex.Message}");
-                return "❌ Fehler beim Abrufen der Kanal-Informationen";
+                return "? Fehler beim Abrufen der Kanal-Informationen";
             }
         }
 
@@ -307,7 +305,7 @@ namespace TwitchSummonSystem.Services
         {
             try
             {
-                LogInfo("Erneuere Twitch API Token...");
+                LogInfo("Refreshing Twitch API token...");
 
                 var newAccessToken = await _tokenService.GetUserAccessTokenAsync();
                 if (!string.IsNullOrEmpty(newAccessToken))
@@ -315,13 +313,13 @@ namespace TwitchSummonSystem.Services
                     _twitchApi.Settings.AccessToken = newAccessToken;
                     LogSuccess("Twitch API Token erfolgreich erneuert");
 
-                    // Teste neue Verbindung
+                    
                     await TestApiConnectionAsync();
                     return true;
                 }
                 else
                 {
-                    LogError("Kein neuer Access Token erhalten");
+                    LogError("No new access token received");
                     return false;
                 }
             }
@@ -347,22 +345,22 @@ namespace TwitchSummonSystem.Services
                 var channel = statusObj.GetProperty("channel");
                 var config = statusObj.GetProperty("configuration");
 
-                info.AppendLine("📺 KANAL-INFORMATIONEN:");
+                info.AppendLine("?? KANAL-INFORMATIONEN:");
                 info.AppendLine($"   Name: {channel.GetProperty("name").GetString()}");
                 info.AppendLine($"   Display Name: {channel.GetProperty("displayName").GetString()}");
                 info.AppendLine($"   ID: {channel.GetProperty("id").GetString()}");
-                info.AppendLine($"   Existiert: {(channel.GetProperty("exists").GetBoolean() ? "✅ Ja" : "❌ Nein")}");
+                info.AppendLine($"   Existiert: {(channel.GetProperty("exists").GetBoolean() ? "? Ja" : "? Nein")}");
                 info.AppendLine();
 
-                info.AppendLine("🔌 API-VERBINDUNG:");
-                info.AppendLine($"   Status: {(statusObj.GetProperty("apiConnected").GetBoolean() ? "✅ Verbunden" : "❌ Getrennt")}");
-                info.AppendLine($"   Client ID: {(config.GetProperty("clientIdSet").GetBoolean() ? "✅ Gesetzt" : "❌ Fehlt")}");
+                info.AppendLine("?? API-VERBINDUNG:");
+                info.AppendLine($"   Status: {(statusObj.GetProperty("apiConnected").GetBoolean() ? "? Verbunden" : "? Getrennt")}");
+                info.AppendLine($"   Client ID: {(config.GetProperty("clientIdSet").GetBoolean() ? "? Gesetzt" : "? Fehlt")}");
                 info.AppendLine();
 
-                info.AppendLine("⚙️ KONFIGURATION:");
-                info.AppendLine($"   Kanal Name: {(config.GetProperty("channelNameSet").GetBoolean() ? "✅ Gesetzt" : "❌ Fehlt")}");
-                info.AppendLine($"   Kanal ID: {(config.GetProperty("channelIdSet").GetBoolean() ? "✅ Gesetzt" : "❌ Fehlt")}");
-                info.AppendLine($"   Summon Reward: {(config.GetProperty("summonRewardNameSet").GetBoolean() ? "✅ Gesetzt" : "❌ Fehlt")}");
+                info.AppendLine("?? KONFIGURATION:");
+                info.AppendLine($"   Kanal Name: {(config.GetProperty("channelNameSet").GetBoolean() ? "? Gesetzt" : "? Fehlt")}");
+                info.AppendLine($"   Kanal ID: {(config.GetProperty("channelIdSet").GetBoolean() ? "? Gesetzt" : "? Fehlt")}");
+                info.AppendLine($"   Summon Reward: {(config.GetProperty("summonRewardNameSet").GetBoolean() ? "? Gesetzt" : "? Fehlt")}");
                 if (config.GetProperty("summonRewardNameSet").GetBoolean())
                 {
                     info.AppendLine($"   Reward Name: '{config.GetProperty("summonRewardName").GetString()}'");
@@ -372,7 +370,7 @@ namespace TwitchSummonSystem.Services
             }
             catch (Exception ex)
             {
-                return $"❌ Fehler beim Erstellen des Service Reports: {ex.Message}";
+                return $"? Fehler beim Erstellen des Service Reports: {ex.Message}";
             }
         }
 

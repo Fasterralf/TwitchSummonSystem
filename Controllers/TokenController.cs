@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using TwitchSummonSystem.Services;
 using System.Text.Json;
 
@@ -23,7 +23,7 @@ public class TokenController : ControllerBase
             var userAppStatus = await _tokenService.GetTokenStatusAsync();
             var chatStatus = await _chatTokenService.GetChatTokenStatusAsync();
 
-            // Konvertiere zu JsonElement für sicheren Zugriff
+            // Konvertiere zu JsonElement f�r sicheren Zugriff
             var userAppJson = JsonSerializer.Serialize(userAppStatus);
             var userAppElement = JsonSerializer.Deserialize<JsonElement>(userAppJson);
 
@@ -76,8 +76,8 @@ public class TokenController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ [TOKEN-CONTROLLER] Fehler in GetTokenStatus: {ex.Message}");
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🔍 [TOKEN-CONTROLLER] Stack Trace: {ex.StackTrace}");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ? [TOKEN-CONTROLLER] Error in GetTokenStatus: {ex.Message}");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ?? [TOKEN-CONTROLLER] Stack Trace: {ex.StackTrace}");
 
             return StatusCode(500, new
             {
@@ -94,14 +94,14 @@ public class TokenController : ControllerBase
     {
         try
         {
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ℹ️ [TOKEN-CONTROLLER] Starte manuellen Token-Refresh");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ?? [TOKEN-CONTROLLER] Starting manual token refresh");
 
             var userAppSuccess = await _tokenService.ForceRefreshTokensAsync();
             var chatSuccess = await _chatTokenService.ForceRefreshChatTokenAsync();
 
             var success = userAppSuccess && chatSuccess;
 
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ℹ️ [TOKEN-CONTROLLER] Refresh Ergebnis - UserApp: {userAppSuccess}, Chat: {chatSuccess}");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ?? [TOKEN-CONTROLLER] Refresh result - UserApp: {userAppSuccess}, Chat: {chatSuccess}");
 
             if (success)
             {
@@ -119,7 +119,7 @@ public class TokenController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ [TOKEN-CONTROLLER] Fehler in ForceRefreshTokens: {ex.Message}");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ? [TOKEN-CONTROLLER] Error in ForceRefreshTokens: {ex.Message}");
             return StatusCode(500, new { error = ex.Message });
         }
     }

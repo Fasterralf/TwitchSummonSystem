@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
@@ -70,14 +70,14 @@ namespace TwitchSummonSystem.Services
                     return;
                 }
 
-                Console.WriteLine($"🤖 Initialisiere Chat Bot für Kanal: {channelName}");
+                Console.WriteLine($"🤖 Initializing chat bot for channel: {channelName}");
                 Console.WriteLine($"🔑 Chat Token: {chatToken[..15]}...");
 
                 await CreateAndConnectClient(botUsername, chatToken, channelName);
             }
             catch (Exception ex)
             {
-                LogError($"Chat Bot Initialisierung fehlgeschlagen: {ex.Message}");
+                LogError($"Chat bot initialization failed: {ex.Message}");
                 await _discordService.SendErrorNotificationAsync("Chat Bot Verbindung Initialisierung fehlgeschlagen", "TwitchChatService", ex);
                 // Retry nach 10 Sekunden
                 _ = Task.Run(async () =>
@@ -113,10 +113,9 @@ namespace TwitchSummonSystem.Services
                         await _discordService.SendErrorNotificationAsync("Fehler beim Trennen der alten Verbindung", "TwitchChatService", ex);
                     }
 
-                    await Task.Delay(1000); // Kurz warten
+                    await Task.Delay(1000);
                 }
 
-                // Neuen Client erstellen
                 var clientOptions = new ClientOptions
                 {
                     MessagesAllowedInPeriod = 750,
@@ -171,11 +170,12 @@ namespace TwitchSummonSystem.Services
             LogSuccess("Chat Bot verbunden!");
             _isConnected = true;
             _reconnectAttempts = 0;
+            _lastConnectionAttempt = DateTime.UtcNow; // Verbindungszeit setzen
         }
 
         private void OnJoinedChannel(object? sender, OnJoinedChannelArgs e)
         {
-            Console.WriteLine($"✅ Chat Bot ist Kanal {e.Channel} beigetreten");
+            Console.WriteLine($"✅ Chat bot joined channel {e.Channel}");
 
             // Zusätzliche Bestätigung nach dem Channel Join
             _ = Task.Run(async () =>
@@ -183,7 +183,7 @@ namespace TwitchSummonSystem.Services
                 await Task.Delay(2000);
                 if (_client?.IsConnected ?? false)
                 {
-                    Console.WriteLine("✅ Chat Bot ist bereit für Nachrichten");
+                    Console.WriteLine("✅ Chat bot ready for messages");
                 }
             });
         }
@@ -231,7 +231,7 @@ namespace TwitchSummonSystem.Services
 
         public async void SendSummonResult(string username, bool isGold, int pityCount)
         {
-            // Prüfen ob verbunden vor dem Senden
+            // Pr�fen ob verbunden vor dem Senden
             if (!IsConnected)
             {
                 LogError("Kann Summon Result nicht senden - Chat nicht verbunden");
@@ -246,12 +246,12 @@ namespace TwitchSummonSystem.Services
             {
                 var goldMessages = new[]
                 {
-                    $"🌟✨ LEGENDARY! ✨🌟 @{username} hat GOLD erhalten! ⭐🎉😱🎊",
-                    $"🔥⚡ AMAZING! ⚡🔥 @{username} ist der GOLD Champion! 🌟😍🎊⭐",
-                    $"🎊🌟 INCREDIBLE! 🌟🎊 @{username} hat das LEGENDARY GOLD! ⭐✨🤯🔥",
-                    $"⭐🎉 FANTASTIC! 🎉⭐ @{username} hat GOLD gesummoned! 🌟💫🏆😎",
-                    $"🔥🌟 GODLIKE! 🌟🔥 @{username} mit dem LEGENDARY Pull! ⭐🤩🎊✨",
-                    $"🎊⚡ INSANE! ⚡🎊 @{username} ist ein GOLD Legend! 🌟😤💫⭐"
+                    $"🎉✨ LEGENDARY! ✨🎉 @{username} hat GOLD erhalten! 🏆⭐✨🎊🎉",
+                    $"🔥⭐ AMAZING! ⭐🔥 @{username} ist der GOLD Champion! 🏆🎉⭐🎊🔥",
+                    $"💎🌟 INCREDIBLE! 🌟💎 @{username} hat das LEGENDARY GOLD! 🏆⭐💎",
+                    $"🎊⭐ FANTASTIC! ⭐🎊 @{username} hat GOLD gesummoned! 🏆🎉🔥⭐",
+                    $"🚀💎 GODLIKE! 💎🚀 @{username} mit dem LEGENDARY Pull! 🏆⭐💎",
+                    $"🔥⭐ INSANE! ⭐🔥 @{username} ist ein GOLD Legend! 🏆⭐💎⭐"
                 };
                 SendMessage(goldMessages[random.Next(goldMessages.Length)]);
             }
@@ -259,14 +259,14 @@ namespace TwitchSummonSystem.Services
             {
                 var normalMessages = new[]
                 {
-                    $"🎲 @{username} Normal Summon - Bis zum nächsten Stream! 💪✨😔",
-                    $"🎯 @{username} Kein Gold heute - Nächster Stream, neue Chance! ⭐😅",
-                    $"🎮 @{username} Normal Hit - Stream Summon verbraucht! 🔥 See you next time! 👋😊",
-                    $"🎲 @{username} Nicht heute - Aber nächsten Stream wieder! 🌟😬💪",
-                    $"🎯 @{username} Normal Summon - Nächster Stream = neue Hoffnung! 🚀🤞⭐",
-                    $"🎮 @{username} Kein Glück heute - nächster Stream wird's besser! 💪😤🌟",
-                    $"🎲 @{username} Stream Summon done - Next stream, next chance! ✨👍👋",
-                    $"🎯 @{username} Normal - Aber hey, nächster Stream wartet! 🚀😉⭐"
+                    $"😊 @{username} Normal Summon - Bis zum nächsten Stream! 👋🎮⭐",
+                    $"😌 @{username} Kein Gold heute - Nächster Stream, neue Chance! 🎯",
+                    $"😊 @{username} Normal Hit - Stream Summon verbraucht! 😊 See you next time! 👋🎮",
+                    $"😌 @{username} Nicht heute - Aber nächsten Stream wieder! 🎮⭐🎯",
+                    $"😊 @{username} Normal Summon - Nächster Stream = neue Hoffnung! 🎯⭐",
+                    $"😌 @{username} Kein Glück heute - nächster Stream wird's besser! 🎮⭐🎯",
+                    $"😊 @{username} Stream Summon done - Next stream, next chance! 👋⭐",
+                    $"😌 @{username} Normal - Aber hey, nächster Stream wartet! 🎮👋"
                 };
                 SendMessage(normalMessages[random.Next(normalMessages.Length)]);
             }
@@ -289,7 +289,7 @@ namespace TwitchSummonSystem.Services
             catch (Exception ex)
             {
                 await _discordService.SendErrorNotificationAsync("Chat Nachricht Fehler", "TwitchChatService", ex);
-                Console.WriteLine($"❌ Chat Nachricht Fehler: {ex.Message}");
+                Console.WriteLine($"❌ Chat message error: {ex.Message}");
             }
         }
 
@@ -332,7 +332,7 @@ namespace TwitchSummonSystem.Services
             try
             {
                 LogInfo("=== Manueller Chat-Reconnect gestartet ===");
-                _reconnectAttempts = 0; // Reset für manuellen Reconnect
+                _reconnectAttempts = 0; // Reset f�r manuellen Reconnect
                 return await ReconnectAsync();
             }
             catch (Exception ex)

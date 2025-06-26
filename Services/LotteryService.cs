@@ -1,4 +1,4 @@
-﻿using TwitchSummonSystem.Models;
+using TwitchSummonSystem.Models;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.SignalR;
 using TwitchSummonSystem.Hubs;
@@ -79,7 +79,7 @@ namespace TwitchSummonSystem.Services
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"❌ Fehler beim Senden der Benachrichtigung an Discord: {ex.Message}");
+                            Console.WriteLine($"? Error sending Discord notification: {ex.Message}");
                         }
                     });
                 }
@@ -93,11 +93,11 @@ namespace TwitchSummonSystem.Services
                     {
                         await _hubContext.Clients.All.SendAsync("SummonResult", result);
                         await _hubContext.Clients.All.SendAsync("LotteryUpdate", _lotteryData);
-                        Console.WriteLine($"📡 SignalR Events gesendet: Summon + LotteryUpdate");
+                        Console.WriteLine($"?? SignalR events sent: Summon + LotteryUpdate");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"❌ SignalR Fehler: {ex.Message}");
+                        Console.WriteLine($"? SignalR error: {ex.Message}");
                     }
                 });
 
@@ -136,7 +136,7 @@ namespace TwitchSummonSystem.Services
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"❌ Fehler beim Senden der Benachrichtigung an Discord: {ex.Message}");
+                    Console.WriteLine($"? Error sending Discord notification: {ex.Message}");
                 }
             });
 
@@ -149,11 +149,11 @@ namespace TwitchSummonSystem.Services
                 {
                     await _hubContext.Clients.All.SendAsync("SummonResult", result);
                     await _hubContext.Clients.All.SendAsync("LotteryUpdate", _lotteryData);
-                    Console.WriteLine($"📡 SignalR Events gesendet: Force Gold Summon");
+                    Console.WriteLine($"?? SignalR events sent: Force Gold Summon");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"❌ SignalR Fehler: {ex.Message}");
+                    Console.WriteLine($"? SignalR error: {ex.Message}");
                 }
             });
 
@@ -189,11 +189,11 @@ namespace TwitchSummonSystem.Services
                 {
                     await _hubContext.Clients.All.SendAsync("PityReset", _lotteryData);
                     await _hubContext.Clients.All.SendAsync("LotteryUpdate", _lotteryData);
-                    Console.WriteLine($"📡 SignalR Events gesendet: PityReset + LotteryUpdate");
+                    Console.WriteLine($"?? SignalR events sent: PityReset + LotteryUpdate");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"❌ SignalR Fehler: {ex.Message}");
+                    Console.WriteLine($"? SignalR error: {ex.Message}");
                 }
             });
         }
@@ -218,10 +218,9 @@ namespace TwitchSummonSystem.Services
                         _lotteryData.CurrentGoldChance = 0.8;
                     }
                 }
-                catch (Exception ex) // ERWEITERN von catch zu catch (Exception ex)
+                catch (Exception ex)
                 {
                     _lotteryData = new LotteryData();
-                    // NEU HINZUFÜGEN:
                     _ = Task.Run(async () =>
                     {
                         try
@@ -251,8 +250,7 @@ namespace TwitchSummonSystem.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Fehler beim Speichern: {ex.Message}");
-                // NEU HINZUFÜGEN:
+                Console.WriteLine($"Error saving: {ex.Message}");
                 _ = Task.Run(async () =>
                 {
                     try
@@ -279,15 +277,15 @@ namespace TwitchSummonSystem.Services
                     var json = JsonConvert.SerializeObject(_lotteryData, Formatting.Indented);
                     File.WriteAllText(backupPath, json);
                     
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 💾 Backup erstellt: {backupFileName}");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ?? Backup created: {backupFileName}");
                     
-                    // Alte Backups löschen (behalte nur die letzten 10)
+                    // Alte Backups l�schen (behalte nur die letzten 10)
                     CleanupOldBackups();
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ Backup Fehler: {ex.Message}");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ? Backup error: {ex.Message}");
             }
         }
 
@@ -303,12 +301,12 @@ namespace TwitchSummonSystem.Services
                 foreach (var file in backupFiles)
                 {
                     file.Delete();
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🗑️ Altes Backup gelöscht: {file.Name}");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ??? Altes Backup gel�scht: {file.Name}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ⚠️ Backup Cleanup Fehler: {ex.Message}");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ?? Backup Cleanup Fehler: {ex.Message}");
             }
         }
 

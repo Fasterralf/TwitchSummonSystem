@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using System.Text.Json;
 using TwitchSummonSystem.Hubs;
@@ -28,7 +28,7 @@ public class OBSController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Fehler beim Laden der OBS Config: {ex.Message}");
+            Console.WriteLine($"Error loading OBS config: {ex.Message}");
         }
         return true; // Default: sichtbar
     }
@@ -43,7 +43,7 @@ public class OBSController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Fehler beim Speichern der OBS Config: {ex.Message}");
+            Console.WriteLine($"Error saving OBS config: {ex.Message}");
         }
     }
 

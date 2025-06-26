@@ -4,28 +4,21 @@ using TwitchSummonSystem.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Environment Variables laden
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
 builder.Services.AddHttpClient();
 
-// Health Checks hinzufügen
 builder.Services.AddHealthChecks()
     .AddCheck("TwitchAPI", () =>
     {
-        // Hier könntest du einen echten Health Check für die Twitch API machen
-        return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Twitch API erreichbar");
+        return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Twitch API reachable");
     })
     .AddCheck("Discord", () =>
     {
-        // Health Check für Discord Webhook
-        return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Discord Webhook erreichbar");
+        return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Discord webhook reachable");
     });
-
-// Rate Limiting für .NET 7 entfernt - würde .NET 8 benötigen
-// builder.Services.AddRateLimiter(options => ...);
 
 builder.Services.AddHttpClient<DiscordService>();
 builder.Services.AddHttpClient<TokenService>();
@@ -33,7 +26,7 @@ builder.Services.AddHttpClient<TwitchEventSubService>();
 builder.Services.AddSingleton<LotteryService>();
 builder.Services.AddSingleton<TwitchService>();
 builder.Services.AddSingleton<TokenService>();
-builder.Services.AddSingleton<ChatTokenService>(); // ← Neu
+builder.Services.AddSingleton<ChatTokenService>();
 builder.Services.AddSingleton<TwitchChatService>();
 builder.Services.AddSingleton<TwitchEventSubService>();
 builder.Services.AddSingleton<DiscordService>();
@@ -50,13 +43,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Global Exception Handling
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 var chatService = app.Services.GetRequiredService<TwitchChatService>();
 var eventSubService = app.Services.GetRequiredService<TwitchEventSubService>();
 
-Console.WriteLine("🚀 Services werden initialisiert...");
+Console.WriteLine("🚀 Initializing services...");
 
 _ = Task.Run(async () =>
 {
@@ -64,35 +56,31 @@ _ = Task.Run(async () =>
     await eventSubService.InitializeRewardAsync();
 });
 
-// Discord Startup-Nachricht senden
 _ = Task.Run(async () =>
 {
     try
     {
-        // Kurz warten bis alle Services initialisiert sind
         await Task.Delay(3000);
-
         var discordService = app.Services.GetRequiredService<DiscordService>();
         await discordService.SendStartupNotificationAsync();
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ Fehler beim Senden der Startup-Nachricht: {ex.Message}");
+        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ Error sending startup notification: {ex.Message}");
     }
 });
 
 app.UseCors("AllowAll");
-// app.UseRateLimiter(); // Entfernt für .NET 7 Kompatibilität  
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<SummonHub>("/summonhub");
-app.MapHealthChecks("/health"); // Health Check Endpoint
+app.MapHealthChecks("/health");
 app.MapGet("/", () => Results.Redirect("/obs.html"));
 
 var urls = app.Configuration["ASPNETCORE_URLS"] ?? "http://localhost:5173";
-Console.WriteLine("🚀 Twitch Summon System gestartet!");
+Console.WriteLine("🚀 Twitch Summon System started!");
 Console.WriteLine($"📺 OBS Browser Source: {urls.Replace("0.0.0.0", "localhost")}/obs.html");
 Console.WriteLine($"🔗 Webhook Endpoint: {urls.Replace("0.0.0.0", "localhost")}/api/twitch/webhook");
 Console.WriteLine($"❤️ Health Check: {urls.Replace("0.0.0.0", "localhost")}/health");

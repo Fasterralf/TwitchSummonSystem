@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using TwitchSummonSystem.Services;
 using System.Text.Json;
 using System.Text;
@@ -36,13 +36,13 @@ namespace TwitchSummonSystem.Controllers
                     return Unauthorized("Invalid signature");
                 }
 
-                Console.WriteLine($"📨 Webhook erhalten: {body}");
+                Console.WriteLine($"?? Webhook received: {body}");
 
                 var webhookData = JsonSerializer.Deserialize<JsonElement>(body);
                 
                 if (webhookData.TryGetProperty("challenge", out var challenge))
                 {
-                    Console.WriteLine("🔐 Webhook Challenge erhalten");
+                    Console.WriteLine("?? Webhook challenge received");
                     return Ok(challenge.GetString());
                 }
 
@@ -65,7 +65,7 @@ namespace TwitchSummonSystem.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Webhook Fehler: {ex.Message}");
+                Console.WriteLine($"? Webhook error: {ex.Message}");
                 return StatusCode(500);
             }
         }
@@ -92,13 +92,13 @@ namespace TwitchSummonSystem.Controllers
 
                 await _hubContext.Clients.All.SendAsync("SummonResult", result);
 
-                Console.WriteLine($"🎲 Simuliert - {request.Username}: {(result.IsGold ? "⭐ GOLD!" : "❌ Kein Gold")} - Pity: {result.PityCount}/80");
+                Console.WriteLine($"?? Simuliert - {request.Username}: {(result.IsGold ? "? GOLD!" : "? No gold")} - Pity: {result.PityCount}/80");
 
                 return Ok(new { success = true, result });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Simulation Fehler: {ex.Message}");
+                Console.WriteLine($"? Simulation error: {ex.Message}");
                 return StatusCode(500, new { error = ex.Message });
             }
         }
@@ -112,13 +112,13 @@ namespace TwitchSummonSystem.Controllers
 
                 await _hubContext.Clients.All.SendAsync("SummonResult", result);
 
-                Console.WriteLine($"⭐ FORCE GOLD - {request.Username}: GOLD GARANTIERT!");
+                Console.WriteLine($"? FORCE GOLD - {request.Username}: GOLD GUARANTEED!");
 
                 return Ok(new { success = true, result });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Force Gold Fehler: {ex.Message}");
+                Console.WriteLine($"? Force gold error: {ex.Message}");
                 return StatusCode(500, new { error = ex.Message });
             }
         }
@@ -131,7 +131,7 @@ namespace TwitchSummonSystem.Controllers
                 var success = await _eventSubService.UpdateSummonRewardNameAsync(request.RewardName);
                 if (success)
                 {
-                    return Ok(new { success = true, message = $"Reward Name auf '{request.RewardName}' geändert" });
+                    return Ok(new { success = true, message = $"Reward Name auf '{request.RewardName}' ge�ndert" });
                 }
                 return BadRequest(new { success = false, error = "Reward nicht gefunden" });
             }
