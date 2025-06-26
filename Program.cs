@@ -1,8 +1,6 @@
 ﻿using TwitchSummonSystem.Hubs;
 using TwitchSummonSystem.Services;
 using TwitchSummonSystem.Middleware;
-using Microsoft.AspNetCore.RateLimiting;
-using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,21 +24,8 @@ builder.Services.AddHealthChecks()
         return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Discord Webhook erreichbar");
     });
 
-// Rate Limiting hinzufügen
-builder.Services.AddRateLimiter(options =>
-{
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: httpContext.User.Identity?.Name ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
-            factory: partition => new FixedWindowRateLimiterOptions
-            {
-                AutoReplenishment = true,
-                PermitLimit = 10, // 10 Requests
-                Window = TimeSpan.FromMinutes(1) // pro Minute
-            }));
-
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-});
+// Rate Limiting für .NET 7 entfernt - würde .NET 8 benötigen
+// builder.Services.AddRateLimiter(options => ...);
 
 builder.Services.AddHttpClient<DiscordService>();
 builder.Services.AddHttpClient<TokenService>();
@@ -97,7 +82,7 @@ _ = Task.Run(async () =>
 });
 
 app.UseCors("AllowAll");
-app.UseRateLimiter(); // Rate Limiting aktivieren
+// app.UseRateLimiter(); // Entfernt für .NET 7 Kompatibilität  
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();

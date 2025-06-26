@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "dgSpecHash": "BuQXT3wUd9Q=",
-  "success": false,
+  "dgSpecHash": "iZzNbAwS/HY=",
+  "success": true,
   "projectFilePath": "C:\\Users\\prime\\Desktop\\Wichtiges Studio Projekt\\TwitchSummonSystem\\TwitchSummonSystem\\TwitchSummonSystem.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\prime\\.nuget\\packages\\microsoft.aspnetcore.authentication.abstractions\\2.3.0\\microsoft.aspnetcore.authentication.abstractions.2.3.0.nupkg.sha512",
@@ -28,8 +28,8 @@
     "C:\\Users\\prime\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\8.0.0\\microsoft.extensions.dependencyinjection.8.0.0.nupkg.sha512",
     "C:\\Users\\prime\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.2\\microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
     "C:\\Users\\prime\\.nuget\\packages\\microsoft.extensions.diagnostics.abstractions\\8.0.1\\microsoft.extensions.diagnostics.abstractions.8.0.1.nupkg.sha512",
-    "C:\\Users\\prime\\.nuget\\packages\\microsoft.extensions.diagnostics.healthchecks\\8.0.0\\microsoft.extensions.diagnostics.healthchecks.8.0.0.nupkg.sha512",
-    "C:\\Users\\prime\\.nuget\\packages\\microsoft.extensions.diagnostics.healthchecks.abstractions\\8.0.0\\microsoft.extensions.diagnostics.healthchecks.abstractions.8.0.0.nupkg.sha512",
+    "C:\\Users\\prime\\.nuget\\packages\\microsoft.extensions.diagnostics.healthchecks\\7.0.0\\microsoft.extensions.diagnostics.healthchecks.7.0.0.nupkg.sha512",
+    "C:\\Users\\prime\\.nuget\\packages\\microsoft.extensions.diagnostics.healthchecks.abstractions\\7.0.0\\microsoft.extensions.diagnostics.healthchecks.abstractions.7.0.0.nupkg.sha512",
     "C:\\Users\\prime\\.nuget\\packages\\microsoft.extensions.fileproviders.abstractions\\8.0.0\\microsoft.extensions.fileproviders.abstractions.8.0.0.nupkg.sha512",
     "C:\\Users\\prime\\.nuget\\packages\\microsoft.extensions.hosting.abstractions\\8.0.1\\microsoft.extensions.hosting.abstractions.8.0.1.nupkg.sha512",
     "C:\\Users\\prime\\.nuget\\packages\\microsoft.extensions.logging\\8.0.0\\microsoft.extensions.logging.8.0.0.nupkg.sha512",
@@ -110,15 +110,5 @@
     "C:\\Users\\prime\\.nuget\\packages\\twitchlib.eventsub.core\\2.5.2\\twitchlib.eventsub.core.2.5.2.nupkg.sha512",
     "C:\\Users\\prime\\.nuget\\packages\\twitchlib.eventsub.websockets\\0.5.0\\twitchlib.eventsub.websockets.0.5.0.nupkg.sha512"
   ],
-  "logs": [
-    {
-      "code": "NU1102",
-      "level": "Error",
-      "message": "Unable to find package Microsoft.AspNetCore.RateLimiting with version (>= 8.0.0)\r\n  - Found 6 version(s) in nuget.org [ Nearest version: 7.0.0-rc.2.22476.2 ]\r\n  - Found 0 version(s) in Microsoft Visual Studio Offline Packages\r\n  - Found 0 version(s) in C:\\Program Files\\dotnet\\library-packs",
-      "libraryId": "Microsoft.AspNetCore.RateLimiting",
-      "targetGraphs": [
-        "net8.0"
-      ]
-    }
-  ]
+  "logs": []
 }
