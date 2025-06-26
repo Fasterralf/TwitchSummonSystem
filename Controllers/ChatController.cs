@@ -10,12 +10,14 @@ namespace TwitchSummonSystem.Controllers
         private readonly LotteryService _lotteryService;
         private readonly TwitchChatService _chatService;
         private readonly ChatTokenService _chatTokenService;
+        private readonly IConfiguration _configuration;
 
-        public ChatController(LotteryService lotteryService, TwitchChatService chatService, ChatTokenService chatTokenService)
+        public ChatController(LotteryService lotteryService, TwitchChatService chatService, ChatTokenService chatTokenService, IConfiguration configuration)
         {
             _lotteryService = lotteryService;
-            _chatService = chatService;  // ← Hinzufügen
-            _chatTokenService = chatTokenService;  // ← Hinzufügen
+            _chatService = chatService;
+            _chatTokenService = chatTokenService;
+            _configuration = configuration;
         }
 
         [HttpGet("pity")]

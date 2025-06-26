@@ -317,14 +317,13 @@ namespace TwitchSummonSystem.Services
                     lastCheck = DateTime.UtcNow
                 };
 
-                return Task.FromResult<object>(result);
+                return result;
             }
             catch (Exception ex)
             {
                 LogError($"Fehler beim Abrufen des Chat Status: {ex.Message}");
                 await _discordService.SendErrorNotificationAsync("Chat Status Fehler", "TwitchChatService", ex);
-                var errorResult = new { connected = false, error = ex.Message, lastCheck = DateTime.UtcNow };
-                return Task.FromResult<object>(errorResult);
+                return new { connected = false, error = ex.Message, lastCheck = DateTime.UtcNow };
             }
         }
 
