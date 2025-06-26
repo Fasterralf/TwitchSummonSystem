@@ -160,7 +160,6 @@ namespace TwitchSummonSystem.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ EventSub Fehler: {ex.Message}");
-                // NEU HINZUFÜGEN:
                 _ = Task.Run(async () =>
                 {
                     try
