@@ -36,7 +36,7 @@ namespace TwitchSummonSystem.Services
             if (!string.IsNullOrEmpty(_cachedChatToken) && DateTime.UtcNow < _chatTokenExpiry.AddMinutes(-30))
             {
                 var remainingTime = _chatTokenExpiry - DateTime.UtcNow;
-                LogDebug($"Chat Token aus Cache verwendet (gültig für weitere {remainingTime.TotalHours:F1}h)");
+                LogDebug($"Chat Token aus Cache verwendet (gï¿½ltig fï¿½r weitere {remainingTime.TotalHours:F1}h)");
                 return _cachedChatToken;
             }
 
@@ -54,12 +54,12 @@ namespace TwitchSummonSystem.Services
             {
                 _cachedChatToken = $"oauth:{currentToken}";
                 var remainingTime = _chatTokenExpiry - DateTime.UtcNow;
-                LogSuccess($"Chat Token validiert - gültig für weitere {remainingTime.TotalHours:F1}h");
+                LogSuccess($"Chat Token validiert - gï¿½ltig fï¿½r weitere {remainingTime.TotalHours:F1}h");
                 return _cachedChatToken;
             }
 
-            // Token abgelaufen oder läuft bald ab
-            LogWarning($"Chat Token {(isValid ? "läuft bald ab" : "ist ungültig")} - erneuere mit Refresh Token");
+            // Token abgelaufen oder lï¿½uft bald ab
+            LogWarning($"Chat Token {(isValid ? "lï¿½uft bald ab" : "ist ungï¿½ltig")} - erneuere mit Refresh Token");
             return await RefreshChatTokenAsync();
         }
 
@@ -76,7 +76,7 @@ namespace TwitchSummonSystem.Services
 
                 if (string.IsNullOrEmpty(refreshToken))
                 {
-                    LogError("Kein Chat Refresh Token verfügbar!");
+                    LogError("Kein Chat Refresh Token verfï¿½gbar!");
                     return _configuration["Twitch:ChatOAuthToken"] ?? string.Empty;
                 }
 
@@ -111,28 +111,28 @@ namespace TwitchSummonSystem.Services
                     _chatTokenExpiry = DateTime.UtcNow.AddSeconds(expiresIn);
 
                     var expiryHours = TimeSpan.FromSeconds(expiresIn).TotalHours;
-                    LogSuccess($"Chat Token erneuert - gültig für {expiryHours:F1}h bis {_chatTokenExpiry:dd.MM.yyyy HH:mm}");
+                    LogSuccess($"Chat Token erneuert - gï¿½ltig fï¿½r {expiryHours:F1}h bis {_chatTokenExpiry:dd.MM.yyyy HH:mm}");
 
                     await UpdateChatTokenConfigAsync(newAccessToken, newRefreshToken);
                     return _cachedChatToken;
                 }
                 else
                 {
-                    // Fehlerbehandlung
-                    await _discordService.SendErrorNotificationAsync("Chat Token Refresh Fehler!", "ChatTokenService", null);
-                    LogError($"Chat Token Refresh fehlgeschlagen: {response.StatusCode}");
+                    // Error handling
+                    await _discordService.SendErrorNotificationAsync("Chat Token Refresh Error!", "ChatTokenService", null);
+                    LogError($"Chat Token Refresh failed: {response.StatusCode}");
                     LogError($"Response: {responseContent}");
 
-                    // Fallback zum aktuellen Token
+                    // Fallback to current token
                     var fallbackToken = _configuration["Twitch:ChatOAuthToken"];
-                    LogWarning($"Verwende Fallback Token: {(!string.IsNullOrEmpty(fallbackToken) ? "verfügbar" : "nicht verfügbar")}");
+                    LogWarning($"Using fallback token: {(!string.IsNullOrEmpty(fallbackToken) ? "available" : "not available")}");
                     return fallbackToken ?? string.Empty;
                 }
             }
             catch (Exception ex)
             {
-                await _discordService.SendErrorNotificationAsync("Chat Token Refresh Fehler!", "ChatTokenService", ex);
-                LogError($"Chat Token Refresh Fehler: {ex.Message}");
+                await _discordService.SendErrorNotificationAsync("Chat Token Refresh Error!", "ChatTokenService", ex);
+                LogError($"Chat Token Refresh Error: {ex.Message}");
                 return _configuration["Twitch:ChatOAuthToken"] ?? string.Empty;
             }
             finally
@@ -176,9 +176,9 @@ namespace TwitchSummonSystem.Services
                     _chatTokenExpiry = DateTime.UtcNow.AddSeconds(expiresIn);
 
                     var remainingHours = TimeSpan.FromSeconds(expiresIn).TotalHours;
-                    LogSuccess($"Chat Token gültig für weitere {remainingHours:F1}h (bis {_chatTokenExpiry:dd.MM.yyyy HH:mm})");
+                    LogSuccess($"Chat Token gï¿½ltig fï¿½r weitere {remainingHours:F1}h (bis {_chatTokenExpiry:dd.MM.yyyy HH:mm})");
 
-                    // Prüfe Scopes
+                    // Prï¿½fe Scopes
                     if (validation.TryGetProperty("scopes", out var scopesElement))
                     {
                         var scopes = scopesElement.EnumerateArray().Select(s => s.GetString()).ToList();
@@ -198,7 +198,7 @@ namespace TwitchSummonSystem.Services
             }
             catch (Exception ex)
             {
-                LogError($"Chat Token Validierung Fehler: {ex.Message}");
+                LogError($"Chat Token Validation Error: {ex.Message}");
                 _chatTokenExpiry = DateTime.MinValue;
                 return false;
             }
@@ -233,7 +233,7 @@ namespace TwitchSummonSystem.Services
             catch (Exception ex)
             {
 
-                LogError($"Fehler beim Laden des Chat Refresh Tokens: {ex.Message}");
+                LogError($"Error loading Chat Refresh Token: {ex.Message}");
             }
             return null;
         }
@@ -255,7 +255,7 @@ namespace TwitchSummonSystem.Services
 
                 await File.WriteAllTextAsync(chatTokenFilePath, json);
                 LogSuccess($"Chat Token gespeichert: {chatTokenFilePath}");
-                LogDebug($"Chat Token gültig bis: {_chatTokenExpiry:dd.MM.yyyy HH:mm}");
+                LogDebug($"Chat Token gï¿½ltig bis: {_chatTokenExpiry:dd.MM.yyyy HH:mm}");
 
                 // Update Configuration in Memory
                 _configuration["Twitch:ChatOAuthToken"] = $"oauth:{newAccessToken}";
@@ -263,14 +263,14 @@ namespace TwitchSummonSystem.Services
             }
             catch (Exception ex)
             {
-                await _discordService.SendErrorNotificationAsync("Fehler beim Speichern der Chat Token!", "ChatTokenService", ex);
-                LogError($"Fehler beim Speichern der Chat Token: {ex.Message}");
+                await _discordService.SendErrorNotificationAsync("Error saving Chat Token!", "ChatTokenService", ex);
+                LogError($"Error saving Chat Token: {ex.Message}");
             }
         }
 
         private async Task StartChatTokenMonitoringAsync()
         {
-            LogInfo("Chat Token-Überwachung gestartet");
+            LogInfo("Chat Token-ï¿½berwachung gestartet");
 
             // Initialer Token-Check
             try
@@ -288,19 +288,19 @@ namespace TwitchSummonSystem.Services
             {
                 try
                 {
-                    // Prüfe alle 45 Minuten (da Chat Token nur ~4h gültig ist)
+                    // Prï¿½fe alle 45 Minuten (da Chat Token nur ~4h gï¿½ltig ist)
                     await Task.Delay(TimeSpan.FromMinutes(45));
 
-                    LogInfo("=== Automatische Chat Token-Prüfung ===");
+                    LogInfo("=== Automatische Chat Token-Prï¿½fung ===");
 
                     if (_chatTokenExpiry != DateTime.MinValue)
                     {
                         var timeRemaining = _chatTokenExpiry - DateTime.UtcNow;
-                        LogDebug($"Chat Token läuft ab in: {timeRemaining.TotalHours:F1}h");
+                        LogDebug($"Chat Token lï¿½uft ab in: {timeRemaining.TotalHours:F1}h");
 
                         if (timeRemaining.TotalHours < 1)
                         {
-                            LogWarning("Chat Token läuft in weniger als 1h ab - erneuere jetzt");
+                            LogWarning("Chat Token lï¿½uft in weniger als 1h ab - erneuere jetzt");
                             await RefreshChatTokenAsync();
                         }
                     }
@@ -314,11 +314,11 @@ namespace TwitchSummonSystem.Services
                         }
                     }
 
-                    LogSuccess("Automatische Chat Token-Prüfung abgeschlossen");
+                    LogSuccess("Automatische Chat Token-Prï¿½fung abgeschlossen");
                 }
                 catch (Exception ex)
                 {
-                    LogError($"Chat Token-Monitoring Fehler: {ex.Message}");
+                    LogError($"Chat Token monitoring error: {ex.Message}");
                 }
             }
         }
@@ -371,7 +371,7 @@ namespace TwitchSummonSystem.Services
             }
             catch (Exception ex)
             {
-                LogError($"Fehler beim Abrufen des Chat Token Status: {ex.Message}");
+                LogError($"Error retrieving Chat Token status: {ex.Message}");
                 return new
                 {
                     valid = false,
@@ -397,7 +397,7 @@ namespace TwitchSummonSystem.Services
 
                 if (success)
                 {
-                    LogSuccess("Chat Token erfolgreich erneuert");
+                    LogSuccess("Chat Token successfully renewed");
                 }
                 else
                 {
@@ -407,7 +407,7 @@ namespace TwitchSummonSystem.Services
             }
             catch (Exception ex)
             {
-                LogError($"Manueller Chat Token-Refresh Fehler: {ex.Message}");
+                LogError($"Manual Chat Token refresh error: {ex.Message}");
                 return false;
             }
         }
@@ -422,22 +422,22 @@ namespace TwitchSummonSystem.Services
 
                 var info = new StringBuilder();
                 info.AppendLine("=== CHAT TOKEN STATUS REPORT ===");
-                info.AppendLine($"Zeitpunkt: {DateTime.Now:dd.MM.yyyy HH:mm:ss}");
+                info.AppendLine($"Time: {DateTime.Now:dd.MM.yyyy HH:mm:ss}");
                 info.AppendLine();
 
                 info.AppendLine("?? CHAT TOKEN:");
                 info.AppendLine($"   Status: {statusObj.GetProperty("status").GetString()}");
-                info.AppendLine($"   Gültig: {statusObj.GetProperty("valid").GetBoolean()}");
+                info.AppendLine($"   Gï¿½ltig: {statusObj.GetProperty("valid").GetBoolean()}");
 
                 if (statusObj.GetProperty("expiresAt").GetDateTime() != DateTime.MinValue)
                 {
-                    info.AppendLine($"   Läuft ab: {statusObj.GetProperty("expiresAt").GetDateTime():dd.MM.yyyy HH:mm}");
+                    info.AppendLine($"   Lï¿½uft ab: {statusObj.GetProperty("expiresAt").GetDateTime():dd.MM.yyyy HH:mm}");
                     info.AppendLine($"   Verbleibend: {statusObj.GetProperty("hoursUntilExpiry").GetDouble():F1} Stunden");
                 }
 
-                info.AppendLine($"   Refresh nötig: {statusObj.GetProperty("needsRefresh").GetBoolean()}");
+                info.AppendLine($"   Refresh nï¿½tig: {statusObj.GetProperty("needsRefresh").GetBoolean()}");
 
-                // Zusätzliche Config-Infos
+                // Zusï¿½tzliche Config-Infos
                 info.AppendLine();
                 info.AppendLine("?? KONFIGURATION:");
                 info.AppendLine($"   Bot Client ID: {(!string.IsNullOrEmpty(_configuration["Twitch:BotClientId"]) ? "? Gesetzt" : "? Fehlt")}");
@@ -449,7 +449,7 @@ namespace TwitchSummonSystem.Services
             }
             catch (Exception ex)
             {
-                return $"? Fehler beim Erstellen des Chat Token Reports: {ex.Message}";
+                return $"âŒ Error creating Chat Token report: {ex.Message}";
             }
         }
 

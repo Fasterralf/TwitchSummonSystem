@@ -9,6 +9,7 @@
       "TwitchSummonSystem/1.0.0": {
         "dependencies": {
           "Microsoft.AspNetCore.SignalR": "1.2.0",
+          "Microsoft.Extensions.Diagnostics.HealthChecks": "7.0.0",
           "Newtonsoft.Json": "13.0.3",
           "TwitchLib.Api": "3.9.0",
           "TwitchLib.Client": "3.3.1",
@@ -196,6 +197,15 @@
           }
         }
       },
+      "Microsoft.Extensions.Diagnostics.HealthChecks/7.0.0": {
+        "dependencies": {
+          "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions": "7.0.0",
+          "Microsoft.Extensions.Hosting.Abstractions": "8.0.1",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.2",
+          "Microsoft.Extensions.Options": "8.0.2"
+        }
+      },
+      "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions/7.0.0": {},
       "Microsoft.Extensions.FileProviders.Abstractions/8.0.0": {
         "dependencies": {
           "Microsoft.Extensions.Primitives": "8.0.0"
@@ -1010,6 +1020,20 @@
       "sha512": "sha512-elH2vmwNmsXuKmUeMQ4YW9ldXiF+gSGDgg1vORksob5POnpaI6caj1Hu8zaYbEuibhqCoWg0YRWDazBY3zjBfg==",
       "path": "microsoft.extensions.diagnostics.abstractions/8.0.1",
       "hashPath": "microsoft.extensions.diagnostics.abstractions.8.0.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Diagnostics.HealthChecks/7.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-5NaiwwjKi7oTkLayPN277QGnKFul8b5CTfIG2i0/BaixEIiRtSdZg1TK/ar+HSm7unA0uMHflnfTcQlmpIPAQg==",
+      "path": "microsoft.extensions.diagnostics.healthchecks/7.0.0",
+      "hashPath": "microsoft.extensions.diagnostics.healthchecks.7.0.0.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions/7.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-FhLiMQzdQIMSiLXax3J6ZEiKYMA0I5RBtPoYfzF862BxiPSvUdThmjRvz9bPR5u+VHSJ9PiIc6kPT20twvbmPg==",
+      "path": "microsoft.extensions.diagnostics.healthchecks.abstractions/7.0.0",
+      "hashPath": "microsoft.extensions.diagnostics.healthchecks.abstractions.7.0.0.nupkg.sha512"
     },
     "Microsoft.Extensions.FileProviders.Abstractions/8.0.0": {
       "type": "package",

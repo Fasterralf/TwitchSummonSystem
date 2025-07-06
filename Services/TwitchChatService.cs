@@ -37,7 +37,7 @@ namespace TwitchSummonSystem.Services
             _chatTokenService = chatTokenService;
             _discordService = discordService;
 
-            // Health Check Timer - prüft alle 30 Sekunden
+            // Health Check Timer - checks every 30 seconds
             _healthCheckTimer = new Timer(HealthCheck, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
 
             // Initialisierung verzögert starten

@@ -21,7 +21,7 @@ namespace TwitchSummonSystem.Services
             _hubContext = hubContext;
             _discordService = discordService;
             
-            // Backup Directory erstellen
+            // Create backup directory
             if (!Directory.Exists(_backupDirectory))
             {
                 Directory.CreateDirectory(_backupDirectory);
@@ -29,7 +29,7 @@ namespace TwitchSummonSystem.Services
             
             LoadLotteryData();
             
-            // Backup Timer - alle 30 Minuten
+            // Backup timer - every 30 minutes
             _backupTimer = new Timer(CreateBackup, null, TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(30));
         }
 
@@ -225,7 +225,7 @@ namespace TwitchSummonSystem.Services
                     {
                         try
                         {
-                            await _discordService.SendErrorNotificationAsync("Fehler beim Laden der Lottery-Daten - verwende Defaults", "LotteryService", ex);
+                            await _discordService.SendErrorNotificationAsync("Error loading lottery data - using defaults", "LotteryService", ex);
                         }
                         catch
                         {
@@ -251,17 +251,16 @@ namespace TwitchSummonSystem.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Error saving: {ex.Message}");
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await _discordService.SendErrorNotificationAsync("Kritischer Fehler beim Speichern der Lottery-Daten!", "LotteryService", ex);
-                    }
-                    catch
-                    {
-                        // Ignore Discord errors
-                    }
-                });
+                _ = Task.Run(async () =>                    {
+                        try
+                        {
+                            await _discordService.SendErrorNotificationAsync("Critical error saving lottery data!", "LotteryService", ex);
+                        }
+                        catch
+                        {
+                            // Ignore Discord errors
+                        }
+                    });
             }
         }
 
@@ -277,9 +276,9 @@ namespace TwitchSummonSystem.Services
                     var json = JsonConvert.SerializeObject(_lotteryData, Formatting.Indented);
                     File.WriteAllText(backupPath, json);
                     
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ?? Backup created: {backupFileName}");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] âœ“ Backup created: {backupFileName}");
                     
-                    // Alte Backups löschen (behalte nur die letzten 10)
+                    // Delete old backups (keep only the latest 10)
                     CleanupOldBackups();
                 }
             }
@@ -296,17 +295,17 @@ namespace TwitchSummonSystem.Services
                 var backupFiles = Directory.GetFiles(_backupDirectory, "lottery_backup_*.json")
                     .Select(f => new FileInfo(f))
                     .OrderByDescending(f => f.CreationTime)
-                    .Skip(10); // Behalte die neuesten 10
+                    .Skip(10); // Keep the latest 10
 
                 foreach (var file in backupFiles)
                 {
                     file.Delete();
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ??? Altes Backup gelöscht: {file.Name}");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] âœ“ Old backup deleted: {file.Name}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ?? Backup Cleanup Fehler: {ex.Message}");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] âœ— Backup cleanup error: {ex.Message}");
             }
         }
 

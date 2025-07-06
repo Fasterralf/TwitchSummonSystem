@@ -14,7 +14,7 @@ namespace TwitchSummonSystem.Services
         {
             _httpClient = httpClient;
             _configuration = configuration;
-            _errorWebhookUrl = _configuration["Discord:ErrorWebhookUrl"]; // ? RICHTIG
+            _errorWebhookUrl = _configuration["Discord:ErrorWebhookUrl"]; // Use error webhook URL
             _webhookUrl = _configuration["Discord:WebhookUrl"];
         }
 
@@ -22,20 +22,20 @@ namespace TwitchSummonSystem.Services
         {
             try
             {
-                // ERROR WEBHOOK URL f�r System-Nachrichten verwenden!
+                // Use ERROR WEBHOOK URL for system messages!
                 var targetUrl = _errorWebhookUrl ?? _webhookUrl;
 
                 var embed = new
                 {
-                    title = "?? System gestartet",
-                    description = "TwitchSummonSystem wurde erfolgreich gestartet",
-                    color = 65280, // Gr�n
+                    title = "✅ System Started",
+                    description = "TwitchSummonSystem has been successfully started",
+                    color = 65280, // Green
                     timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
                     fields = new[]
                     {
-                new { name = "Status", value = "? Online", inline = true },
-                new { name = "Startzeit", value = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"), inline = true },
-                new { name = "Services", value = "Discord ?\nToken Management ?\nChat Bot ?", inline = false }
+                new { name = "Status", value = "✅ Online", inline = true },
+                new { name = "Start Time", value = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"), inline = true },
+                new { name = "Services", value = "Discord ✅\nToken Management ✅\nChat Bot ✅", inline = false }
             }
                 };
 
@@ -47,20 +47,20 @@ namespace TwitchSummonSystem.Services
                 var json = JsonSerializer.Serialize(payload);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync(targetUrl, content); // ? ERROR CHANNEL
+                var response = await _httpClient.PostAsync(targetUrl, content); // ERROR CHANNEL
 
                 if (response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ? Startup notification sent to Discord ERROR channel");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ✅ Startup notification sent to Discord ERROR channel");
                 }
                 else
                 {
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ?? Discord startup notification failed: {response.StatusCode}");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ Discord startup webhook failed: {response.StatusCode}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ? Discord startup notification error: {ex.Message}");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ❌ Discord startup notification error: {ex.Message}");
             }
         }
 
@@ -68,7 +68,7 @@ namespace TwitchSummonSystem.Services
         {
             if (string.IsNullOrEmpty(_errorWebhookUrl))
             {
-                Console.WriteLine("?? Discord error webhook URL not configured");
+                Console.WriteLine("⚠️ Discord error webhook URL not configured");
                 return;
             }
 
@@ -80,14 +80,14 @@ namespace TwitchSummonSystem.Services
                     {
                         new
                         {
-                            title = "?? SYSTEM ERROR",
-                            description = $"**Fehler aufgetreten:** {errorMessage}",
-                            color = 15158332, // Rot
+                            title = "❌ SYSTEM ERROR",
+                            description = $"**Error occurred:** {errorMessage}",
+                            color = 15158332, // Red
                             fields = new List<object>
                             {
                                 new
                                 {
-                                    name = "? Zeitpunkt",
+                                    name = "🕒 Time",
                                     value = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
                                     inline = true
                                 }
@@ -95,7 +95,7 @@ namespace TwitchSummonSystem.Services
                             {
                                 new
                                 {
-                                    name = "?? Komponente",
+                                    name = "🔧 Component",
                                     value = component,
                                     inline = true
                                 }
@@ -104,7 +104,7 @@ namespace TwitchSummonSystem.Services
                             {
                                 new
                                 {
-                                    name = "?? Exception Details",
+                                    name = "📋 Exception Details",
                                     value = $"```{exception.GetType().Name}: {exception.Message}```",
                                     inline = false
                                 }
@@ -126,16 +126,16 @@ namespace TwitchSummonSystem.Services
 
                 if (response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"? Discord error notification sent");
+                    Console.WriteLine($"✅ Discord error notification sent");
                 }
                 else
                 {
-                    Console.WriteLine($"? Discord error webhook failed: {response.StatusCode}");
+                    Console.WriteLine($"❌ Discord error webhook failed: {response.StatusCode}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"? Discord error service failed: {ex.Message}");
+                Console.WriteLine($"❌ Discord error service failed: {ex.Message}");
             }
         }
 
@@ -143,7 +143,7 @@ namespace TwitchSummonSystem.Services
         {
             if (string.IsNullOrEmpty(_webhookUrl))
             {
-                Console.WriteLine("?? Discord webhook URL not configured");
+                Console.WriteLine("⚠️ Discord webhook URL not configured");
                 return;
             }
 
@@ -155,26 +155,26 @@ namespace TwitchSummonSystem.Services
                     {
                         new
                         {
-                            title = "?? LEGENDARY GOLD GEWONNEN! ??",
-                            description = $"**{username}** hat Gold erhalten!",
+                            title = "🏆 LEGENDARY GOLD WON! 🏆",
+                            description = $"**{username}** has received Gold!",
                             color = 16766720, 
                             fields = new[]
                             {
                                 new
                                 {
-                                    name = "?? Chance",
+                                    name = "🎲 Chance",
                                     value = $"{goldChance:F1}%",
                                     inline = true
                                 },
                                 new
                                 {
-                                    name = "?? Gesamt Summons",
+                                    name = "📊 Total Summons",
                                     value = totalSummons.ToString(),
                                     inline = true
                                 },
                                 new
                                 {
-                                    name = "? Gesamt Golds",
+                                    name = "🏆 Total Golds",
                                     value = totalGolds.ToString(),
                                     inline = true
                                 }
@@ -195,16 +195,16 @@ namespace TwitchSummonSystem.Services
 
                 if (response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"? Discord notification sent for {username}");
+                    Console.WriteLine($"✅ Discord notification sent for {username}");
                 }
                 else
                 {
-                    Console.WriteLine($"? Discord webhook error: {response.StatusCode}");
+                    Console.WriteLine($"❌ Discord webhook error: {response.StatusCode}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"? Discord service error: {ex.Message}");
+                Console.WriteLine($"❌ Discord service error: {ex.Message}");
             }
         }        
 
