@@ -218,7 +218,7 @@ namespace TwitchSummonSystem.Services
             else if (message == "!pity reset" && (e.ChatMessage.IsModerator || e.ChatMessage.IsBroadcaster))
             {
                 _lotteryService.ResetLottery();
-                SendMessage($"@{username} Lottery wurde zurückgesetzt!");
+                SendMessage($"@{username} Lottery has been reset!");
             }
             else if (message == "!summon stats")
             {
