@@ -22,14 +22,14 @@ namespace TwitchSummonSystem.Services
         {
             try
             {
-                // ERROR WEBHOOK URL f�r System-Nachrichten verwenden!
+                // ERROR WEBHOOK URL f�r System-Nachrichten verwenden!
                 var targetUrl = _errorWebhookUrl ?? _webhookUrl;
 
                 var embed = new
                 {
                     title = "?? System gestartet",
                     description = "TwitchSummonSystem wurde erfolgreich gestartet",
-                    color = 65280, // Gr�n
+                    color = 65280, // Gr�n
                     timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
                     fields = new[]
                     {
@@ -207,5 +207,71 @@ namespace TwitchSummonSystem.Services
                 Console.WriteLine($"? Discord service error: {ex.Message}");
             }
         }        
+
+        public async Task SendSuccessNotificationAsync(string message, string? component = null)
+        {
+            if (string.IsNullOrEmpty(_errorWebhookUrl))
+            {
+                Console.WriteLine("⚠️ Discord error webhook URL not configured");
+                return;
+            }
+
+            try
+            {
+                var embed = new
+                {
+                    embeds = new[]
+                    {
+                        new
+                        {
+                            title = "✅ SYSTEM RECOVERY",
+                            description = $"**Recovery successful:** {message}",
+                            color = 65280, // Green
+                            fields = new List<object>
+                            {
+                                new
+                                {
+                                    name = "🕒 Time",
+                                    value = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
+                                    inline = true
+                                }
+                            }.Concat(component != null ? new[]
+                            {
+                                new
+                                {
+                                    name = "🔧 Component",
+                                    value = component,
+                                    inline = true
+                                }
+                            } : Array.Empty<object>())
+                            .ToArray(),
+                            thumbnail = new
+                            {
+                                url = "https://cdn.discordapp.com/attachments/1166234116046100520/1166234120501684224/success.png"
+                            },
+                            timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                        }
+                    }
+                };
+
+                var json = JsonSerializer.Serialize(embed);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.PostAsync(_errorWebhookUrl, content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"✅ Discord success notification sent");
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Discord success webhook failed: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Discord success service failed: {ex.Message}");
+            }
+        }
     }
 }
