@@ -22,6 +22,8 @@ namespace TwitchSummonSystem.Services
         private readonly int _maxReconnectAttempts = 5;
         private readonly SemaphoreSlim _reconnectSemaphore = new(1, 1);
         private readonly Timer _healthCheckTimer;
+        private DateTime _lastSuccessfulConnection = DateTime.MinValue;
+        private bool _isInRecoveryMode = false;
 
         // Logging Helper
         private void LogInfo(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] ℹ️ [CHAT] {message}");
