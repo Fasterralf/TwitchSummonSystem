@@ -913,15 +913,15 @@
         async function loadTokenStatus() {
             const data = await apiCall('/api/token/status');
             if (data) {
-                updateStatus('app-token-status', data.appTokenValid);
-                updateStatus('chat-token-status', data.chatTokenValid);
-                updateStatus('token-status', data.appTokenValid && data.chatTokenValid);
+                updateStatus('app-token-status', data.appToken?.valid || false);
+                updateStatus('chat-token-status', data.chatToken?.valid || false);
+                updateStatus('token-status', (data.appToken?.valid || false) && (data.chatToken?.valid || false));
                 
-                if (data.lastAppTokenRefresh) {
-                    updateElement('last-app-refresh', new Date(data.lastAppTokenRefresh).toLocaleString());
+                if (data.appToken?.expiresAt) {
+                    updateElement('last-app-refresh', new Date(data.appToken.expiresAt).toLocaleString());
                 }
-                if (data.lastChatTokenRefresh) {
-                    updateElement('last-chat-refresh', new Date(data.lastChatTokenRefresh).toLocaleString());
+                if (data.chatToken?.expiresAt) {
+                    updateElement('last-chat-refresh', new Date(data.chatToken.expiresAt).toLocaleString());
                 }
             }
         }
