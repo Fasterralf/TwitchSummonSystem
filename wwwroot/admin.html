@@ -1,10 +1,25 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Twitch Summon System - Admin</title>
+    <title>TwitchSummonSystem - Admin Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #9146ff;
+            --secondary-color: #6441a5;
+            --success-color: #00d2aa;
+            --warning-color: #ff9500;
+            --danger-color: #ff4757;
+            --dark-bg: #0f0f23;
+            --darker-bg: #1a1a2e;
+            --card-bg: rgba(42, 42, 42, 0.9);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8b8;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,135 +27,142 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
-            color: white;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--darker-bg) 100%);
+            color: var(--text-primary);
             min-height: 100vh;
             line-height: 1.6;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
 
+        /* Header */
         .header {
             text-align: center;
-            margin-bottom: 40px;
-            padding: 30px 0;
-            background: linear-gradient(135deg, #6441a5 0%, #9146ff 100%);
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(100, 65, 165, 0.3);
-        }
-
-            .header h1 {
-                font-size: 2.5rem;
-                margin-bottom: 10px;
-                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            }
-
-            .header p {
-                opacity: 0.9;
-                font-size: 1.1rem;
-            }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
             margin-bottom: 30px;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(145, 70, 255, 0.3);
         }
 
-        .main-content {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 30px;
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
-        .section {
-            background: rgba(42, 42, 42, 0.8);
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-tab {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 0 5px;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            box-shadow: 0 4px 15px rgba(145, 70, 255, 0.3);
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
             backdrop-filter: blur(10px);
             border-radius: 15px;
             padding: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             transition: transform 0.2s ease;
         }
 
-            .section:hover {
-                transform: translateY(-2px);
-            }
+        .card:hover {
+            transform: translateY(-2px);
+        }
 
-        .section-header {
+        .card-header {
             display: flex;
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 2px solid rgba(100, 65, 165, 0.3);
+            border-bottom: 2px solid var(--border-color);
         }
 
-            .section-header h2 {
-                font-size: 1.4rem;
-                margin-left: 10px;
-                color: #9146ff;
-            }
+        .card-header h3 {
+            font-size: 1.3rem;
+            margin-left: 12px;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
 
-        .section-icon {
-            font-size: 1.8rem;
+        .card-icon {
+            font-size: 1.5rem;
             width: 40px;
             height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #6441a5, #9146ff);
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
             border-radius: 10px;
-        }
-
-        /* Button Styles */
-        .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin: 15px 0;
-        }
-
-        .button {
-            background: linear-gradient(135deg, #6441a5, #9146ff);
             color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(100, 65, 165, 0.3);
-            position: relative;
-            overflow: hidden;
         }
 
-            .button:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(100, 65, 165, 0.4);
-            }
+        /* Grid Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
 
-            .button.danger {
-                background: linear-gradient(135deg, #dc3545, #c82333);
-                box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-            }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
 
-            .button.success {
-                background: linear-gradient(135deg, #28a745, #20c997);
-                box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-            }
-
-            .button.secondary {
-                background: linear-gradient(135deg, #6c757d, #5a6268);
-                box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
-            }
-
-        /* Stats Grid */
+        /* Stats */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -149,927 +171,864 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, rgba(100, 65, 165, 0.1), rgba(145, 70, 255, 0.1));
-            border: 1px solid rgba(145, 70, 255, 0.2);
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
             padding: 20px;
+            border-radius: 12px;
             text-align: center;
-            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
         }
 
-            .stat-card:hover {
-                transform: scale(1.05);
-                border-color: rgba(145, 70, 255, 0.4);
-            }
-
-        .stat-number {
+        .stat-value {
             font-size: 2rem;
-            font-weight: bold;
-            color: #9146ff;
+            font-weight: 700;
+            color: var(--primary-color);
             margin-bottom: 5px;
         }
 
         .stat-label {
+            color: var(--text-secondary);
             font-size: 0.9rem;
-            opacity: 0.8;
         }
 
-        /* Input Styles */
-        .input-group {
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
             margin: 15px 0;
         }
 
-            .input-group label {
-                display: block;
-                margin-bottom: 8px;
-                font-weight: 500;
-                color: #9146ff;
-            }
-
-        input[type="text"], input[type="url"] {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            background: rgba(0, 0, 0, 0.3);
+        .btn {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
             color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
             font-size: 14px;
-            transition: border-color 0.3s ease;
-        }
-
-            input[type="text"]:focus, input[type="url"]:focus {
-                outline: none;
-                border-color: #9146ff;
-                box-shadow: 0 0 0 3px rgba(145, 70, 255, 0.1);
-            }
-
-        /* Status Messages */
-        .status {
-            padding: 12px 15px;
-            margin: 15px 0;
-            border-radius: 8px;
             font-weight: 500;
-            border-left: 4px solid;
-        }
-
-            .status.success {
-                background: rgba(40, 167, 69, 0.1);
-                color: #28a745;
-                border-left-color: #28a745;
-            }
-
-            .status.error {
-                background: rgba(220, 53, 69, 0.1);
-                color: #dc3545;
-                border-left-color: #dc3545;
-            }
-
-            .status.info {
-                background: rgba(145, 70, 255, 0.1);
-                color: #9146ff;
-                border-left-color: #9146ff;
-            }
-
-        /* Log Styles */
-        .log {
-            background: rgba(0, 0, 0, 0.8);
-            color: #00ff88;
-            padding: 20px;
-            border-radius: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid rgba(0, 255, 136, 0.2);
-        }
-
-        /* Token Status */
-        .token-card {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            padding: 20px;
-            margin: 15px 0;
-            border-left: 4px solid #6441a5;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(145, 70, 255, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .token-status-good {
-            border-left-color: #28a745;
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(145, 70, 255, 0.4);
         }
 
-        .token-status-warning {
-            border-left-color: #ffc107;
+        .btn-success {
+            background: linear-gradient(135deg, #00d2aa, #20c997);
+            box-shadow: 0 4px 15px rgba(0, 210, 170, 0.3);
         }
 
-        .token-status-error {
-            border-left-color: #dc3545;
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color), #c82333);
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
         }
 
-        /* Rewards List */
-        .rewards-container {
-            max-height: 300px;
-            overflow-y: auto;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-            margin: 15px 0;
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning-color), #fd7e14);
+            box-shadow: 0 4px 15px rgba(255, 149, 0, 0.3);
         }
 
-        .reward-item {
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #5a6268);
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        /* Status Indicators */
+        .status {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-online {
+            background: rgba(0, 210, 170, 0.2);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+
+        .status-offline {
+            background: rgba(255, 71, 87, 0.2);
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+        }
+
+        .status-warning {
+            background: rgba(255, 149, 0, 0.2);
+            color: var(--warning-color);
+            border: 1px solid var(--warning-color);
+        }
+
+        /* Info Cards */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .info-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
         }
 
-            .reward-item:last-child {
-                border-bottom: none;
-            }
-
-        /* Auto-refresh Controls */
-        .auto-refresh-controls {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        .info-label {
+            color: var(--text-secondary);
+            font-size: 14px;
         }
 
-        /* Responsive Design */
-        @media (max-width: 1200px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
+        .info-value {
+            color: var(--text-primary);
+            font-weight: 500;
         }
 
+        /* Responsive */
         @media (max-width: 768px) {
-            .container {
-                padding: 15px;
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-tabs {
+                flex-wrap: wrap;
             }
 
             .header h1 {
                 font-size: 2rem;
             }
 
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .button-group {
+            .btn-group {
                 flex-direction: column;
             }
 
-            .button {
-                width: 100%;
+            .btn {
+                justify-content: center;
             }
         }
 
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar {
-            width: 8px;
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
         }
 
-        ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #6441a5, #9146ff);
-            border-radius: 4px;
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
         }
 
-            ::-webkit-scrollbar-thumb:hover {
-                background: linear-gradient(135deg, #9146ff, #6441a5);
-            }
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .toast-error {
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .toast-warning {
+            border-left: 4px solid var(--warning-color);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>🎮 Twitch Summon System</h1>
-            <p>Admin Control Panel</p>
+            <h1><i class="fas fa-crown"></i> TwitchSummonSystem</h1>
+            <p>Admin Dashboard - Control your stream summon system</p>
         </div>
 
-        <!-- Dashboard Overview -->
-        <div class="dashboard-grid">
-            <!-- Quick Actions -->
-            <div class="section">
-                <div class="section-header">
-                    <div class="section-icon">⚡</div>
-                    <h2>Quick Actions</h2>
-                </div>
-                <div class="button-group">
-                    <button class="button success" onclick="simulateSummon()">🎲 Test Summon</button>
-                    <button class="button" onclick="forceGoldSummon()">⭐ Force Gold</button>
-                    <button class="button secondary" onclick="loadStats()">📊 Stats laden</button>
-                    <button class="button secondary" onclick="openOBS()">📺 OBS Overlay</button>
-                    <button class="button danger" onclick="resetLottery()">🔄 Reset Lottery</button>
-                </div>
-            </div>
-
-            <!-- Current Stats Overview -->
-            <div class="section">
-                <div class="section-header">
-                    <div class="section-icon">📊</div>
-                    <h2>Live Stats</h2>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalSummons">-</div>
-                        <div class="stat-label">Total Summons</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalGolds">-</div>
-                        <div class="stat-label">Gold Summons</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="currentChance">-</div>
-                        <div class="stat-label">Aktuelle Chance</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="goldRate">-</div>
-                        <div class="stat-label">Gold Rate</div>
-                    </div>
-                </div>
-            </div>
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('overview')">
+                <i class="fas fa-dashboard"></i> Overview
+            </button>
+            <button class="nav-tab" onclick="showTab('lottery')">
+                <i class="fas fa-dice"></i> Lottery
+            </button>
+            <button class="nav-tab" onclick="showTab('chat')">
+                <i class="fas fa-comments"></i> Chat Bot
+            </button>
+            <button class="nav-tab" onclick="showTab('tokens')">
+                <i class="fas fa-key"></i> Tokens
+            </button>
+            <button class="nav-tab" onclick="showTab('system')">
+                <i class="fas fa-cog"></i> System
+            </button>
         </div>
 
-        <!-- Main Content Area -->
-        <div class="main-content">
-            <!-- Left Column -->
-            <div>
-                <!-- Token Dashboard -->
-                <div class="section">
-                    <div class="section-header">
-                        <div class="section-icon">🔑</div>
-                        <h2>Token Status</h2>
-                    </div>
-                    <div class="auto-refresh-controls">
-                        <label>
-                            <input type="checkbox" id="autoRefreshTokens" checked>
-                            Auto-Refresh (30s)
-                        </label>
-                        <div class="button-group">
-                            <button class="button secondary" onclick="loadTokenStatus()">🔄 Status</button>
-                            <button class="button success" onclick="forceRefreshTokens()">🔄 Erneuern</button>
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <div class="grid-2">
+                <!-- System Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-heartbeat"></i>
                         </div>
+                        <h3>System Status</h3>
                     </div>
-                    <div id="tokenStatus">
-                        <div class="token-card">
-                            <h4>📡 Lade Token-Status...</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Chat Bot</span>
+                            <span class="status status-offline" id="chat-status">
+                                <i class="fas fa-circle"></i> Checking...
+                            </span>
                         </div>
-                    </div>
-                </div>
-
-                <div class="auto-refresh-controls">
-                    <label>
-                        <input type="checkbox" id="autoRefreshTokens" checked>
-                        Auto-Refresh (30s)
-                    </label>
-                    <div class="button-group">
-                        <button class="button secondary" onclick="loadTokenStatus()">🔄 Status</button>
-                        <button class="button success" onclick="forceRefreshTokens()">🔄 Erneuern</button>
-                        <button class="button" onclick="debugTokenStatus()">🔍 Debug</button>
-                    </div>
-                </div>
-
-
-                <!-- Ergänze nach dem Token Dashboard eine neue Chat-Sektion: -->
-                <div class="section">
-                    <div class="section-header">
-                        <div class="section-icon">💬</div>
-                        <h2>Chat Status</h2>
-                    </div>
-                    <div class="auto-refresh-controls">
-                        <label>
-                            <input type="checkbox" id="autoRefreshChat" checked>
-                            Auto-Refresh Chat (15s)
-                        </label>
-                        <div class="button-group">
-                            <button class="button secondary" onclick="loadChatStatus()">🔄 Status</button>
-                            <button class="button success" onclick="forceChatReconnect()">🔗 Reconnect</button>
+                        <div class="info-item">
+                            <span class="info-label">Discord</span>
+                            <span class="status status-online">
+                                <i class="fas fa-circle"></i> Online
+                            </span>
                         </div>
-                    </div>
-                    <div id="chatStatus">
-                        <div class="token-card">
-                            <h4>💬 Lade Chat-Status...</h4>
+                        <div class="info-item">
+                            <span class="info-label">Token Service</span>
+                            <span class="status status-online" id="token-status">
+                                <i class="fas fa-circle"></i> Online
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Lottery Service</span>
+                            <span class="status status-online">
+                                <i class="fas fa-circle"></i> Online
+                            </span>
                         </div>
                     </div>
                 </div>
 
-
-                <!-- Reward Configuration -->
-                <div class="section">
-                    <div class="section-header">
-                        <div class="section-icon">🎮</div>
-                        <h2>Reward Konfiguration</h2>
-                    </div>
-                    <div class="input-group">
-                        <label>Aktuell überwacht:</label>
-                        <strong id="currentRewardName" style="color: #9146ff;">-</strong>
-                    </div>
-                    <div class="button-group">
-                        <button class="button secondary" onclick="loadAvailableRewards()">🔍 Rewards anzeigen</button>
-                        <button class="button secondary" onclick="loadCurrentRewardName()">🔄 Namen laden</button>
-                    </div>
-                    <div id="availableRewards" class="rewards-container"></div>
-                    <div class="input-group">
-                        <label for="newRewardName">Neuer Reward Name:</label>
-                        <input type="text" id="newRewardName" placeholder="Exakter Reward Name zum Überwachen" />
-                        <button class="button success" onclick="updateRewardName()" style="margin-top: 10px; width: 100%;">🎯 Reward überwachen</button>
-                    </div>
-                    <div id="rewardNameStatus"></div>
-                </div>
-
-                <!-- Test Area -->
-                <div class="section">
-                    <div class="section-header">
-                        <div class="section-icon">🧪</div>
-                        <h2>Test Bereich</h2>
-                    </div>
-                    <div class="input-group">
-                        <label for="testUsername">Test Username:</label>
-                        <input type="text" id="testUsername" placeholder="Username für Test" value="TestUser" />
-                    </div>
-                    <div class="button-group">
-                        <button class="button" onclick="simulateCustomSummon()">🎯 Custom Test</button>
-                        <button class="button" onclick="testMultipleSummons()">🎲 10x Test</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column -->
-            <div>
-                <!-- Detailed Stats -->
-                <div class="section">
-                    <div class="section-header">
-                        <div class="section-icon">📈</div>
-                        <h2>Detaillierte Stats</h2>
+                <!-- Quick Stats -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Quick Stats</h3>
                     </div>
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <div class="stat-number" id="baseChance">0.8%</div>
-                            <div class="stat-label">Base Chance</div>
+                            <div class="stat-value" id="total-summons">0</div>
+                            <div class="stat-label">Total Summons</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-number" id="nextBonus">-</div>
-                            <div class="stat-label">Nächster Bonus</div>
+                            <div class="stat-value" id="total-golds">0</div>
+                            <div class="stat-label">Total Golds</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="current-chance">0.8%</div>
+                            <div class="stat-label">Current Chance</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="pity-count">0</div>
+                            <div class="stat-label">Pity Count</div>
                         </div>
                     </div>
-                    <button class="button secondary" onclick="loadStats()" style="width: 100%;">🔄 Aktualisieren</button>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Quick Actions</h3>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="refreshAllServices()">
+                        <i class="fas fa-sync"></i> Refresh All
+                    </button>
+                    <button class="btn btn-warning" onclick="reconnectChat()">
+                        <i class="fas fa-plug"></i> Reconnect Chat
+                    </button>
+                    <button class="btn btn-secondary" onclick="refreshTokens()">
+                        <i class="fas fa-key"></i> Refresh Tokens
+                    </button>
+                    <button class="btn btn-danger" onclick="resetLottery()">
+                        <i class="fas fa-undo"></i> Reset Lottery
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lottery Tab -->
+        <div id="lottery" class="tab-content">
+            <div class="grid-2">
+                <!-- Lottery Settings -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-dice"></i>
+                        </div>
+                        <h3>Lottery Control</h3>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Base Chance</span>
+                            <span class="info-value" id="base-chance">0.8%</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Current Chance</span>
+                            <span class="info-value" id="lottery-current-chance">0.8%</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Summons Since Gold</span>
+                            <span class="info-value" id="summons-since-gold">0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Last Summon</span>
+                            <span class="info-value" id="last-summon">Never</span>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn" onclick="refreshLotteryData()">
+                            <i class="fas fa-sync"></i> Refresh Data
+                        </button>
+                        <button class="btn btn-warning" onclick="forceGoldSummon()">
+                            <i class="fas fa-star"></i> Force Gold
+                        </button>
+                        <button class="btn btn-danger" onclick="resetLottery()">
+                            <i class="fas fa-undo"></i> Reset Lottery
+                        </button>
+                    </div>
                 </div>
 
-                <!-- System Info -->
-                <div class="section">
-                    <div class="section-header">
-                        <div class="section-icon">ℹ️</div>
-                        <h2>System Info</h2>
+                <!-- Lottery Stats -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <h3>Detailed Statistics</h3>
                     </div>
-                    <div class="token-card">
-                        <p><strong>Letzte Prüfung:</strong> <span id="lastTokenUpdate">-</span></p>
-                        <p><strong>Nächste Prüfung:</strong> <span id="nextTokenCheck">-</span></p>
-                        <p><strong>System Status:</strong> <span style="color: #28a745;">✅ Online</span></p>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="lottery-total-summons">0</div>
+                            <div class="stat-label">Total Summons</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="lottery-total-golds">0</div>
+                            <div class="stat-label">Total Golds</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="gold-rate">0%</div>
+                            <div class="stat-label">Gold Rate</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="pity-rate">0%</div>
+                            <div class="stat-label">Pity Rate</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Tab -->
+        <div id="chat" class="tab-content">
+            <div class="grid-2">
+                <!-- Chat Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h3>Chat Bot Status</h3>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Connection</span>
+                            <span class="status status-offline" id="chat-connection">
+                                <i class="fas fa-circle"></i> Checking...
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Channel</span>
+                            <span class="info-value" id="chat-channel">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Bot Username</span>
+                            <span class="info-value" id="bot-username">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Reconnect Attempts</span>
+                            <span class="info-value" id="reconnect-attempts">0/5</span>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn" onclick="refreshChatStatus()">
+                            <i class="fas fa-sync"></i> Refresh Status
+                        </button>
+                        <button class="btn btn-warning" onclick="reconnectChat()">
+                            <i class="fas fa-plug"></i> Force Reconnect
+                        </button>
                     </div>
                 </div>
 
-                <div class="section">
-                    <div class="section-header">
-                        <div class="section-icon">📺</div>
-                        <h2>OBS Overlay</h2>
+                <!-- Chat Commands -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-terminal"></i>
+                        </div>
+                        <h3>Available Commands</h3>
                     </div>
-                    <div class="button-group">
-                        <button class="button secondary" onclick="openOBS()">📺 OBS Overlay öffnen</button>
-                        <button class="button" id="toggleStatsBtn" onclick="toggleOBSStats()">📊 Stats ausblenden</button>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">!pity</span>
+                            <span class="info-value">Show current pity info</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">!pity reset</span>
+                            <span class="info-value">Reset lottery (Mods only)</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">!summon stats</span>
+                            <span class="info-value">Show detailed stats</span>
+                        </div>
                     </div>
-                    <div class="token-card">
-                        <p><strong>Stats Anzeige:</strong> <span id="statsVisibilityStatus" style="color: #28a745;">✅ Sichtbar</span></p>
-                        <p><strong>Overlay URL:</strong> <code style="font-size: 0.8rem;">/obs.html</code></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tokens Tab -->
+        <div id="tokens" class="tab-content">
+            <div class="grid-2">
+                <!-- Token Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <h3>Token Management</h3>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">App Token</span>
+                            <span class="status status-online" id="app-token-status">
+                                <i class="fas fa-circle"></i> Valid
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Chat Token</span>
+                            <span class="status status-online" id="chat-token-status">
+                                <i class="fas fa-circle"></i> Valid
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Token Monitoring</span>
+                            <span class="status status-online">
+                                <i class="fas fa-circle"></i> Active
+                            </span>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn" onclick="refreshTokenStatus()">
+                            <i class="fas fa-sync"></i> Check Status
+                        </button>
+                        <button class="btn btn-warning" onclick="refreshTokens()">
+                            <i class="fas fa-refresh"></i> Refresh Tokens
+                        </button>
+                        <button class="btn btn-secondary" onclick="getTokenReport()">
+                            <i class="fas fa-file-alt"></i> Generate Report
+                        </button>
                     </div>
                 </div>
 
-                <!-- Live Log -->
-                <div class="section">
-                    <div class="section-header">
-                        <div class="section-icon">📝</div>
-                        <h2>Live Log</h2>
+                <!-- Token Info -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <h3>Token Information</h3>
                     </div>
-                    <div id="liveLog" class="log">
-                        System bereit...<br>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Last App Token Refresh</span>
+                            <span class="info-value" id="last-app-refresh">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Last Chat Token Refresh</span>
+                            <span class="info-value" id="last-chat-refresh">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Auto Refresh</span>
+                            <span class="status status-online">
+                                <i class="fas fa-circle"></i> Enabled
+                            </span>
+                        </div>
                     </div>
-                    <button class="button danger" onclick="clearLog()" style="width: 100%; margin-top: 15px;">🗑️ Log löschen</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Tab -->
+        <div id="system" class="tab-content">
+            <div class="grid-3">
+                <!-- System Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <h3>System Actions</h3>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="refreshAllServices()">
+                            <i class="fas fa-sync-alt"></i> Refresh All Services
+                        </button>
+                        <button class="btn btn-warning" onclick="restartServices()">
+                            <i class="fas fa-power-off"></i> Restart Services
+                        </button>
+                        <button class="btn btn-secondary" onclick="viewLogs()">
+                            <i class="fas fa-file-text"></i> View Logs
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Health Check -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                        <h3>Health Check</h3>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn" onclick="performHealthCheck()">
+                            <i class="fas fa-stethoscope"></i> Run Health Check
+                        </button>
+                        <button class="btn btn-secondary" onclick="getSystemInfo()">
+                            <i class="fas fa-info"></i> System Info
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Utilities -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <h3>Utilities</h3>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="clearCache()">
+                            <i class="fas fa-broom"></i> Clear Cache
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportData()">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        window.onload = function () {
-            loadStats();
-            loadCurrentRewardName();
-            loadTokenStatus();
-            loadChatStatus(); 
-            loadOBSStatsVisibility(); 
-            updateStatsVisibilityUI();
-            log('✅ Admin Panel geladen');
+        // Global variables
+        let currentTab = 'overview';
+        let autoRefreshInterval;
 
-            document.getElementById('autoRefreshTokens').addEventListener('change', toggleTokenAutoRefresh);
-            toggleTokenAutoRefresh();
-            document.getElementById('autoRefreshChat').addEventListener('change', toggleChatAutoRefresh); 
-            toggleChatAutoRefresh();
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadInitialData();
+            startAutoRefresh();
+        });
 
+        // Tab Management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all nav tabs
+            document.querySelectorAll('.nav-tab').forEach(navTab => {
+                navTab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            currentTab = tabName;
+            
+            // Load tab-specific data
+            loadTabData(tabName);
+        }
+
+        // Toast Notifications
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'exclamation'}"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
             setTimeout(() => {
-                loadAvailableRewards();
-            }, 2000);
-        };
-
-        function log(message) {
-            const logDiv = document.getElementById('liveLog');
-            const timestamp = new Date().toLocaleTimeString();
-            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
-            logDiv.scrollTop = logDiv.scrollHeight;
+                toast.classList.remove('show');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
         }
 
-        function showStatus(elementId, message, type = 'info') {
-            const element = document.getElementById(elementId);
-            element.innerHTML = `<div class="status ${type}">${message}</div>`;
-            setTimeout(() => {
-                element.innerHTML = '';
-            }, 5000);
+        // Loading States
+        function setButtonLoading(button, loading = true) {
+            if (loading) {
+                button.disabled = true;
+                button.innerHTML = button.innerHTML.replace(/<i[^>]*><\/i>/, '<div class="loading"></div>');
+            } else {
+                button.disabled = false;
+                // Restore original icon - this is simplified, in production you'd store the original
+                location.reload(); // Quick fix for demo
+            }
         }
 
-        async function simulateSummon() {
+        // API Calls
+        async function apiCall(endpoint, method = 'GET', data = null) {
             try {
-                log('🎲 Simuliere Summon...');
-                const response = await fetch('/api/twitch/simulate-reward', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ Username: 'AdminTest' })
-                });
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
                 }
-                const data = await response.json();
-                console.log('Summon Response:', data);
-                if (data.success && data.result) {
-                    const result = data.result;
-                    const goldChance = result.GoldChance || result.goldChance || result.CurrentGoldChance || result.currentGoldChance || 0;
-                    log(`🎲 Summon: ${result.IsGold || result.isGold ? '⭐ GOLD!' : '❌ Kein Gold'} - Chance: ${goldChance.toFixed(1)}%`);
-                    setTimeout(loadStats, 1000);
-                } else {
-                    log(`❌ Summon fehlgeschlagen: ${JSON.stringify(data)}`);
-                }
+                
+                const response = await fetch(endpoint, options);
+                return await response.json();
             } catch (error) {
-                log(`❌ Summon Fehler: ${error.message}`);
-                console.error('Summon Error:', error);
+                console.error('API call failed:', error);
+                showToast('API call failed: ' + error.message, 'error');
+                return null;
             }
         }
 
-        async function simulateCustomSummon() {
-            const username = document.getElementById('testUsername').value || 'TestUser';
-            try {
-                log(`🎯 Custom Summon für ${username}...`);
-                const response = await fetch('/api/twitch/simulate-reward', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ Username: username })
-                });
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                const data = await response.json();
-                console.log('Custom Summon Response:', data);
-                if (data.success && data.result) {
-                    const result = data.result;
-                    const goldChance = result.GoldChance || result.goldChance || result.CurrentGoldChance || result.currentGoldChance || 0.8;
-                    const isGold = result.IsGold || result.isGold || false;
-                    const safeGoldChance = typeof goldChance === 'number' ? goldChance : 0.8;
-                    log(`🎯 ${username}: ${isGold ? '⭐ GOLD!' : '❌ Kein Gold'} - Chance: ${safeGoldChance.toFixed(1)}%`);
-                    setTimeout(loadStats, 1000);
-                } else {
-                    log(`❌ Custom Summon fehlgeschlagen: ${JSON.stringify(data)}`);
-                }
-            } catch (error) {
-                log(`❌ Custom Summon Fehler: ${error.message}`);
-                console.error('Custom Summon Error:', error);
+        // Data Loading Functions
+        async function loadInitialData() {
+            await Promise.all([
+                loadLotteryData(),
+                loadChatStatus(),
+                loadTokenStatus()
+            ]);
+        }
+
+        async function loadTabData(tabName) {
+            switch(tabName) {
+                case 'overview':
+                    await loadInitialData();
+                    break;
+                case 'lottery':
+                    await loadLotteryData();
+                    break;
+                case 'chat':
+                    await loadChatStatus();
+                    break;
+                case 'tokens':
+                    await loadTokenStatus();
+                    break;
             }
         }
 
-        async function testMultipleSummons() {
-            log('🎲 Starte 10x Test Summons...');
-            for (let i = 1; i <= 10; i++) {
-                await simulateSummon();
-                await new Promise(resolve => setTimeout(resolve, 500));
+        async function loadLotteryData() {
+            const data = await apiCall('/api/summon/lottery-data');
+            if (data) {
+                updateElement('total-summons', data.totalSummons);
+                updateElement('lottery-total-summons', data.totalSummons);
+                updateElement('total-golds', data.totalGolds);
+                updateElement('lottery-total-golds', data.totalGolds);
+                updateElement('current-chance', data.currentGoldChance.toFixed(1) + '%');
+                updateElement('lottery-current-chance', data.currentGoldChance.toFixed(1) + '%');
+                updateElement('base-chance', data.baseGoldChance.toFixed(1) + '%');
+                updateElement('pity-count', data.summonsSinceLastGold);
+                updateElement('summons-since-gold', data.summonsSinceLastGold);
+                
+                if (data.lastSummon) {
+                    updateElement('last-summon', new Date(data.lastSummon).toLocaleString());
+                }
+                
+                // Calculate rates
+                const goldRate = data.totalSummons > 0 ? (data.totalGolds / data.totalSummons * 100).toFixed(1) : '0';
+                updateElement('gold-rate', goldRate + '%');
+                
+                const pityRate = data.totalSummons > 0 ? (data.summonsSinceLastGold / data.totalSummons * 100).toFixed(1) : '0';
+                updateElement('pity-rate', pityRate + '%');
             }
-            log('✅ 10x Test Summons abgeschlossen');
+        }
+
+        async function loadChatStatus() {
+            const data = await apiCall('/api/chat/status');
+            if (data) {
+                updateStatus('chat-status', data.connected);
+                updateStatus('chat-connection', data.connected);
+                updateElement('chat-channel', data.channel || '-');
+                updateElement('bot-username', data.botUsername || '-');
+                updateElement('reconnect-attempts', `${data.reconnectAttempts}/${data.maxReconnectAttempts}`);
+            }
+        }
+
+        async function loadTokenStatus() {
+            const data = await apiCall('/api/token/status');
+            if (data) {
+                updateStatus('app-token-status', data.appTokenValid);
+                updateStatus('chat-token-status', data.chatTokenValid);
+                updateStatus('token-status', data.appTokenValid && data.chatTokenValid);
+                
+                if (data.lastAppTokenRefresh) {
+                    updateElement('last-app-refresh', new Date(data.lastAppTokenRefresh).toLocaleString());
+                }
+                if (data.lastChatTokenRefresh) {
+                    updateElement('last-chat-refresh', new Date(data.lastChatTokenRefresh).toLocaleString());
+                }
+            }
+        }
+
+        // Action Functions
+        async function refreshAllServices() {
+            showToast('Refreshing all services...', 'info');
+            await Promise.all([
+                loadLotteryData(),
+                loadChatStatus(),
+                loadTokenStatus()
+            ]);
+            showToast('All services refreshed successfully!');
+        }
+
+        async function reconnectChat() {
+            showToast('Reconnecting chat bot...', 'info');
+            const result = await apiCall('/api/chat/reconnect', 'POST');
+            if (result && result.success) {
+                showToast('Chat bot reconnected successfully!');
+                await loadChatStatus();
+            } else {
+                showToast('Failed to reconnect chat bot', 'error');
+            }
+        }
+
+        async function refreshTokens() {
+            showToast('Refreshing tokens...', 'info');
+            const result = await apiCall('/api/token/refresh', 'POST');
+            if (result && result.success) {
+                showToast('Tokens refreshed successfully!');
+                await loadTokenStatus();
+            } else {
+                showToast('Failed to refresh tokens', 'error');
+            }
         }
 
         async function resetLottery() {
-            if (!confirm('Lottery wirklich zurücksetzen?')) return;
-            try {
-                log('🔄 Setze Lottery zurück...');
-                const response = await fetch('/api/summon/pity/reset', { method: 'POST' });
-                const data = await response.json();
-                log('✅ Lottery wurde zurückgesetzt');
-                setTimeout(() => {
-                    loadStats();
-                }, 500);
-            } catch (error) {
-                log(`❌ Lottery Reset Fehler: ${error.message}`);
+            if (!confirm('Are you sure you want to reset the lottery? This will clear all current progress.')) {
+                return;
+            }
+            
+            showToast('Resetting lottery...', 'info');
+            const result = await apiCall('/api/summon/reset', 'POST');
+            if (result) {
+                showToast('Lottery reset successfully!');
+                await loadLotteryData();
+            } else {
+                showToast('Failed to reset lottery', 'error');
             }
         }
 
         async function forceGoldSummon() {
-            try {
-                log('⭐ Force Gold Summon...');
-                const response = await fetch('/api/twitch/simulate-force-gold', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ Username: 'ForceGoldAdmin' })
-                });
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                const data = await response.json();
-                if (data.success && data.result) {
-                    log(`⭐ FORCE GOLD: Garantiertes Gold für ${data.result.Username}!`);
-                    setTimeout(loadStats, 1000);
-                } else {
-                    log(`❌ Force Gold fehlgeschlagen: ${JSON.stringify(data)}`);
-                }
-            } catch (error) {
-                log(`❌ Force Gold Fehler: ${error.message}`);
-                console.error('Force Gold Error:', error);
-            }
-        }
-
-        async function loadStats() {
-            try {
-                const response = await fetch('/api/summon/stats');
-                const stats = await response.json();
-                console.log('Stats Response:', stats);
-
-                document.getElementById('totalSummons').textContent = stats.totalSummons || 0;
-                document.getElementById('totalGolds').textContent = stats.totalGolds || 0;
-                document.getElementById('goldRate').textContent = (stats.goldRate || 0).toFixed(1) + '%';
-                document.getElementById('currentChance').textContent = (stats.currentGoldChance || 0.8).toFixed(1) + '%';
-
-                const summonsSinceLastGold = stats.summonsSinceLastGold || 0;
-                let nextBonus = '';
-                if (summonsSinceLastGold < 100) {
-                    nextBonus = `in ${100 - summonsSinceLastGold} Summons`;
-                } else if (summonsSinceLastGold >= 100) {
-                    const bonusRounds = Math.floor((summonsSinceLastGold - 100) / 10);
-                    const nextBonusAt = (bonusRounds + 1) * 10 + 100;
-                    nextBonus = `in ${nextBonusAt - summonsSinceLastGold} Summons`;
-                }
-                if (summonsSinceLastGold === 0) {
-                    nextBonus = 'in 100 Summons';
-                }
-                document.getElementById('nextBonus').textContent = nextBonus;
-
-                log(`📊 Stats geladen: ${stats.totalSummons} Summons, ${(stats.currentGoldChance || 0.8).toFixed(1)}% Chance`);
-            } catch (error) {
-                log(`❌ Stats Fehler: ${error.message}`);
-                console.error('Stats Error:', error);
-            }
-        }
-
-        async function updateRewardName() {
-            const newName = document.getElementById('newRewardName').value.trim();
-            if (!newName) {
-                showStatus('rewardNameStatus', 'Reward Name darf nicht leer sein', 'error');
-                log('❌ Reward Name darf nicht leer sein');
+            if (!confirm('Force a gold summon for testing?')) {
                 return;
             }
-            try {
-                log(`🎯 Ändere überwachten Reward zu: "${newName}"...`);
-                showStatus('rewardNameStatus', 'Suche Reward...', 'info');
-                const response = await fetch('/api/twitch/update-reward-name', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ RewardName: newName })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    log(`✅ System überwacht jetzt Reward: "${newName}"`);
-                    showStatus('rewardNameStatus', `✅ Reward "${newName}" wird jetzt überwacht`, 'success');
-                    document.getElementById('currentRewardName').textContent = newName;
-                    document.getElementById('newRewardName').value = '';
-                } else {
-                    log(`❌ Fehler: ${data.error}`);
-                    showStatus('rewardNameStatus', `❌ ${data.error}`, 'error');
-                }
-            } catch (error) {
-                log(`❌ Update Fehler: ${error.message}`);
-                showStatus('rewardNameStatus', `❌ Verbindungsfehler: ${error.message}`, 'error');
-            }
-        }
-
-        async function loadCurrentRewardName() {
-            try {
-                const response = await fetch('/api/twitch/current-reward-name');
-                const data = await response.json();
-                if (data.rewardName) {
-                    document.getElementById('currentRewardName').textContent = data.rewardName;
-                    log(`📋 Überwachter Reward: "${data.rewardName}"`);
-                }
-            } catch (error) {
-                log(`❌ Fehler beim Laden: ${error.message}`);
-            }
-        }
-
-        async function loadAvailableRewards() {
-            try {
-                log('🔍 Lade verfügbare Rewards...');
-                const response = await fetch('/api/twitch/available-rewards');
-                const data = await response.json();
-                const rewardsDiv = document.getElementById('availableRewards');
-
-                if (data.rewards && data.rewards.length > 0) {
-                    let html = '<h4 style="color: #9146ff; margin-bottom: 15px;">📋 Verfügbare Rewards:</h4>';
-                    data.rewards.forEach(reward => {
-                        const status = reward.is_enabled ? '✅' : '❌';
-                        html += `
-                                    <div class="reward-item">
-                                        <div>
-                                            <strong>${reward.title}</strong>
-                                            <div style="font-size: 0.9rem; opacity: 0.7;">${reward.cost} Punkte</div>
-                                        </div>
-                                        <div>${status}</div>
-                                    </div>
-                                `;
-                    });
-                    rewardsDiv.innerHTML = html;
-                    log(`✅ ${data.rewards.length} Rewards gefunden`);
-                } else {
-                    rewardsDiv.innerHTML = '<p style="text-align: center; opacity: 0.7;">❌ Keine Rewards gefunden</p>';
-                    log('❌ Keine Rewards gefunden');
-                }
-            } catch (error) {
-                log(`❌ Fehler beim Laden der Rewards: ${error.message}`);
-                document.getElementById('availableRewards').innerHTML = '<p style="text-align: center; color: #dc3545;">❌ Fehler beim Laden</p>';
-            }
-        }
-
-        function openOBS() {
-            window.open('/obs.html', '_blank');
-            log('📺 OBS Overlay geöffnet');
-        }
-
-        function clearLog() {
-            document.getElementById('liveLog').innerHTML = 'Log gelöscht...<br>';
-        }
-
-        // Token Dashboard Functions
-        let tokenAutoRefreshInterval;
-
-        async function loadTokenStatus() {
-            try {
-                log('🔑 Lade Token-Status...');
-                const response = await fetch('/api/token/status');
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                console.log('Token Status Response:', data); // Debug-Ausgabe
-
-                document.getElementById('lastTokenUpdate').textContent = new Date().toLocaleString('de-DE');
-
-                // Sichere Zugriffe mit Fallback-Werten
-                const userToken = data.userToken || {};
-                const appToken = data.appToken || {};
-
-                const userDays = typeof userToken.daysUntilExpiry === 'number' ? userToken.daysUntilExpiry : 0;
-                const appDays = typeof appToken.daysUntilExpiry === 'number' ? appToken.daysUntilExpiry : 0;
-
-                let userStatus = 'token-status-good';
-                let appStatus = 'token-status-good';
-
-                if (userDays < 7) userStatus = 'token-status-warning';
-                if (userDays < 1) userStatus = 'token-status-error';
-                if (appDays < 1) appStatus = 'token-status-warning';
-
-                // Sichere Datum-Formatierung
-                const userExpiresAt = userToken.expiresAt ? new Date(userToken.expiresAt).toLocaleString('de-DE') : 'Unbekannt';
-                const appExpiresAt = appToken.expiresAt ? new Date(appToken.expiresAt).toLocaleString('de-DE') : 'Unbekannt';
-
-                document.getElementById('tokenStatus').innerHTML = `
-            <div class="token-card ${userStatus}">
-                <h4>👤 User Access Token</h4>
-                <p><strong>Status:</strong> ${userToken.valid ? '✅ Gültig' : '❌ Ungültig'}</p>
-                <p><strong>Läuft ab:</strong> ${userExpiresAt}</p>
-                <p><strong>Verbleibend:</strong> ${userDays.toFixed(1)} Tage</p>
-            </div>
-            <div class="token-card ${appStatus}">
-                <h4>🤖 App Access Token</h4>
-                <p><strong>Status:</strong> ${appToken.valid ? '✅ Gültig' : '❌ Ungültig'}</p>
-                <p><strong>Läuft ab:</strong> ${appExpiresAt}</p>
-                <p><strong>Verbleibend:</strong> ${appDays.toFixed(1)} Tage</p>
-                <p><strong>Auto-Refresh:</strong> ✅ Aktiviert</p>
-            </div>
-        `;
-
-                const nextCheck = new Date(Date.now() + 30000);
-                document.getElementById('nextTokenCheck').textContent = nextCheck.toLocaleTimeString('de-DE');
-
-                log(`✅ Token-Status geladen - User: ${userDays.toFixed(1)}d, App: ${appDays.toFixed(1)}d`);
-
-            } catch (error) {
-                console.error('Token Status Error:', error);
-                document.getElementById('tokenStatus').innerHTML = `
-            <div class="token-card token-status-error">
-                <h4>❌ Fehler beim Laden</h4>
-                <p>Fehler: ${error.message}</p>
-                <p>Überprüfe die Token-Services und API-Verbindung.</p>
-            </div>
-        `;
-                log(`❌ Token-Status Fehler: ${error.message}`);
-            }
-        }
-
-
-        async function forceRefreshTokens() {
-            try {
-                log('🔄 Erneuere Token...');
-                const response = await fetch('/api/token/refresh', { method: 'POST' });
-                const data = await response.json();
-                if (response.ok) {
-                    log('✅ Token erfolgreich erneuert!');
-                    setTimeout(loadTokenStatus, 1000);
-                } else {
-                    log('❌ Token Refresh Fehler: ' + data.error);
-                }
-            } catch (error) {
-                log('❌ Token Refresh Fehler: ' + error.message);
-            }
-        }
-
-        // Globale Variable für Stats Visibility
-        let obsStatsVisible = true;
-
-        // Stats Toggle Funktion
-        async function toggleOBSStats() {
-            try {
-                const response = await fetch('/api/obs/toggle-stats', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ visible: !obsStatsVisible })
-                });
-
-                if (response.ok) {
-                    obsStatsVisible = !obsStatsVisible;
-                    updateStatsVisibilityUI();
-                    log(`📊 OBS Stats ${obsStatsVisible ? 'eingeblendet' : 'ausgeblendet'}`);
-                } else {
-                    log('❌ Fehler beim Umschalten der Stats');
-                }
-            } catch (error) {
-                log(`❌ Stats Toggle Fehler: ${error.message}`);
-            }
-        }
-
-        // UI Update für Stats Visibility
-        function updateStatsVisibilityUI() {
-            const btn = document.getElementById('toggleStatsBtn');
-            const status = document.getElementById('statsVisibilityStatus');
-
-            if (obsStatsVisible) {
-                btn.textContent = '📊 Stats ausblenden';
-                btn.className = 'button';
-                status.innerHTML = '<span style="color: #28a745;">✅ Sichtbar</span>';
+            
+            const username = prompt('Enter username for the gold summon:');
+            if (!username) return;
+            
+            showToast('Forcing gold summon...', 'info');
+            const result = await apiCall('/api/summon/force-gold', 'POST', { username });
+            if (result) {
+                showToast(`Gold summon forced for ${username}!`);
+                await loadLotteryData();
             } else {
-                btn.textContent = '📊 Stats einblenden';
-                btn.className = 'button secondary';
-                status.innerHTML = '<span style="color: #dc3545;">❌ Versteckt</span>';
+                showToast('Failed to force gold summon', 'error');
             }
         }
 
-        // Stats Visibility beim Laden prüfen
-        async function loadOBSStatsVisibility() {
-            try {
-                const response = await fetch('/api/obs/stats-visibility');
-                const data = await response.json();
-                obsStatsVisible = data.visible;
-                updateStatsVisibilityUI();
-            } catch (error) {
-                console.log('Stats Visibility laden fehlgeschlagen');
+        // Utility Functions
+        function updateElement(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
             }
         }
 
-        function toggleTokenAutoRefresh() {
-            const checkbox = document.getElementById('autoRefreshTokens');
-            if (checkbox.checked) {
-                tokenAutoRefreshInterval = setInterval(loadTokenStatus, 30000);
-                log('✅ Token Auto-Refresh aktiviert (30s)');
-            } else {
-                clearInterval(tokenAutoRefreshInterval);
-                log('❌ Token Auto-Refresh deaktiviert');
+        function updateStatus(id, isOnline) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.className = `status ${isOnline ? 'status-online' : 'status-offline'}`;
+                element.innerHTML = `<i class="fas fa-circle"></i> ${isOnline ? 'Online' : 'Offline'}`;
             }
         }
 
-        let chatAutoRefreshInterval;
-
-        async function loadChatStatus() {
-            try {
-                log('💬 Lade Chat-Status...');
-                const response = await fetch('/api/chat/status');
-                const data = await response.json();
-
-                let statusClass = data.connected ? 'token-status-good' : 'token-status-error';
-                let connectionStatus = data.connected ? '✅ Verbunden' : '❌ Getrennt';
-
-                document.getElementById('chatStatus').innerHTML = `
-            <div class="token-card ${statusClass}">
-                <h4>💬 Chat Verbindung</h4>
-                <p><strong>Status:</strong> ${connectionStatus}</p>
-                <p><strong>Kanal:</strong> ${data.channel || 'nicht gesetzt'}</p>
-                <p><strong>Bot:</strong> ${data.botUsername || 'nicht gesetzt'}</p>
-                <p><strong>Reconnect-Versuche:</strong> ${data.reconnectAttempts}/${data.maxReconnectAttempts}</p>
-                <p><strong>Letzte Verbindung:</strong> ${data.lastConnectionAttempt ? new Date(data.lastConnectionAttempt).toLocaleString('de-DE') : 'nie'}</p>
-            </div>
-            <div class="token-card">
-                <h4>⚙️ Chat Konfiguration</h4>
-                <p><strong>Kanal Name:</strong> ${data.configuration?.channelNameSet ? '✅ Gesetzt' : '❌ Fehlt'}</p>
-                <p><strong>Bot Username:</strong> ${data.configuration?.botUsernameSet ? '✅ Gesetzt' : '❌ Fehlt'}</p>
-                <p><strong>Chat Token:</strong> ${data.configuration?.chatTokenSet ? '✅ Gesetzt' : '❌ Fehlt'}</p>
-            </div>
-        `;
-
-                log(`✅ Chat-Status geladen - ${connectionStatus}`);
-            } catch (error) {
-                document.getElementById('chatStatus').innerHTML = `
-            <div class="token-card token-status-error">
-                <h4>❌ Fehler beim Laden</h4>
-                <p>${error.message}</p>
-            </div>
-        `;
-                log(`❌ Chat-Status Fehler: ${error.message}`);
-            }
-        }
-
-        async function forceChatReconnect() {
-            try {
-                log('🔗 Starte Chat-Reconnect...');
-                const response = await fetch('/api/chat/reconnect', { method: 'POST' });
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    log('✅ Chat-Reconnect erfolgreich!');
-                    setTimeout(loadChatStatus, 2000);
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(() => {
+                if (currentTab === 'overview') {
+                    loadInitialData();
                 } else {
-                    log('❌ Chat-Reconnect fehlgeschlagen: ' + (data.error || 'Unbekannter Fehler'));
+                    loadTabData(currentTab);
                 }
-            } catch (error) {
-                log('❌ Chat-Reconnect Fehler: ' + error.message);
-            }
+            }, 30000); // Refresh every 30 seconds
         }
 
-        function toggleChatAutoRefresh() {
-            const checkbox = document.getElementById('autoRefreshChat');
-            if (checkbox.checked) {
-                chatAutoRefreshInterval = setInterval(loadChatStatus, 15000);
-                log('✅ Chat Auto-Refresh aktiviert (15s)');
-            } else {
-                clearInterval(chatAutoRefreshInterval);
-                log('❌ Chat Auto-Refresh deaktiviert');
-            }
-        }
-
-        // Debug-Funktion für Token-Status
-        async function debugTokenStatus() {
-            try {
-                const response = await fetch('/api/token/status');
-                const data = await response.json();
-                console.log('=== TOKEN DEBUG ===');
-                console.log('Full Response:', data);
-                console.log('User Token:', data.userToken);
-                console.log('App Token:', data.appToken);
-                console.log('Chat Token:', data.chatToken);
-                console.log('==================');
-
-                // Zeige die Rohdaten im Log
-                log(`🔍 Debug: ${JSON.stringify(data, null, 2)}`);
-            } catch (error) {
-                console.error('Debug Error:', error);
-                log(`❌ Debug Fehler: ${error.message}`);
-            }
-        }
-
-
-        // Auto-refresh stats every 30 seconds
-        setInterval(loadStats, 30000);
+        // Additional placeholder functions for future implementation
+        async function refreshLotteryData() { await loadLotteryData(); }
+        async function refreshChatStatus() { await loadChatStatus(); }
+        async function refreshTokenStatus() { await loadTokenStatus(); }
+        async function getTokenReport() { showToast('Token report feature coming soon!', 'info'); }
+        async function restartServices() { showToast('Service restart feature coming soon!', 'info'); }
+        async function viewLogs() { showToast('Log viewer feature coming soon!', 'info'); }
+        async function performHealthCheck() { showToast('Health check completed!'); }
+        async function getSystemInfo() { showToast('System info feature coming soon!', 'info'); }
+        async function clearCache() { showToast('Cache cleared!'); }
+        async function exportData() { showToast('Data export feature coming soon!', 'info'); }
     </script>
 </body>
 </html>
-

@@ -22,7 +22,7 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-# Erstelle Verzeichnis für Daten
+# Create directory for data
 USER root
 RUN mkdir -p /app/data && chown app:app /app/data
 USER app
