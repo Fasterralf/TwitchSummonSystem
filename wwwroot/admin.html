@@ -914,15 +914,22 @@
             const data = await apiCall('/api/token/status');
             if (data) {
                 console.log('Token Status Data:', JSON.stringify(data, null, 2)); // Better debug log
-                updateStatus('app-token-status', data.appToken?.valid || false);
-                updateStatus('chat-token-status', data.chatToken?.valid || false);
-                updateStatus('token-status', (data.appToken?.valid || false) && (data.chatToken?.valid || false));
                 
-                if (data.appToken?.expiresAt) {
-                    const appDate = new Date(data.appToken.expiresAt);
-                    console.log('App Token Expires:', data.appToken.expiresAt, 'Parsed:', appDate);
+                // API returns userToken, appToken, and chatToken
+                // We display userToken as "App Token" in the UI for clarity
+                const userTokenValid = data.userToken?.valid || false;
+                const chatTokenValid = data.chatToken?.valid || false;
+                
+                updateStatus('app-token-status', userTokenValid);
+                updateStatus('chat-token-status', chatTokenValid);
+                updateStatus('token-status', userTokenValid && chatTokenValid);
+                
+                // Display userToken expiration as "App Token" (this is the main Twitch API token)
+                if (data.userToken?.expiresAt) {
+                    const userDate = new Date(data.userToken.expiresAt);
+                    console.log('User Token (displayed as App) Expires:', data.userToken.expiresAt, 'Parsed:', userDate);
                     // Format as local time with clear timezone indication
-                    const formattedDate = appDate.toLocaleString('en-US', {
+                    const formattedDate = userDate.toLocaleString('en-US', {
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit',
@@ -933,6 +940,8 @@
                     });
                     updateElement('app-token-expires', formattedDate);
                 }
+                
+                // Display chatToken expiration
                 if (data.chatToken?.expiresAt) {
                     const chatDate = new Date(data.chatToken.expiresAt);
                     console.log('Chat Token Expires:', data.chatToken.expiresAt, 'Parsed:', chatDate);
