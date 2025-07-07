@@ -874,7 +874,7 @@
         }
 
         async function loadLotteryData() {
-            const data = await apiCall('/api/summon/lottery-data');
+            const data = await apiCall('/api/summon/pity');
             if (data) {
                 updateElement('total-summons', data.totalSummons);
                 updateElement('lottery-total-summons', data.totalSummons);
@@ -965,7 +965,7 @@
             }
             
             showToast('Resetting lottery...', 'info');
-            const result = await apiCall('/api/summon/reset', 'POST');
+            const result = await apiCall('/api/summon/pity/reset', 'POST');
             if (result) {
                 showToast('Lottery reset successfully!');
                 await loadLotteryData();
@@ -983,7 +983,7 @@
             if (!username) return;
             
             showToast('Forcing gold summon...', 'info');
-            const result = await apiCall('/api/summon/force-gold', 'POST', { username });
+            const result = await apiCall('/api/twitch/simulate-force-gold', 'POST', { username });
             if (result) {
                 showToast(`Gold summon forced for ${username}!`);
                 await loadLotteryData();
