@@ -1,25 +1,28 @@
 # 🎮 TwitchSummonSystem
 
-Ein production-ready ASP.NET Core System für Twitch-Channel-Point-Rewards mit OBS-Integration und Discord-Benachrichtigungen.
+Ein production-ready ASP.NET Core System für Twitch-Channel-Point-Reward mit OBS-Integration, Discord-Benachrichtigungen und modernem Admin-Dashboard.
 
-## ⚠️ **WICHTIG: Eigene Credentials erforderlich!**
+## ⚠️ **WICHTIG: Sichere Konfiguration!**
 
-Dieses Projekt verwendet **Environment Variables** für alle API-Keys und Secrets. Du musst deine **eigenen Twitch/Discord Credentials** einrichten! 
+Dieses System nutzt **Environment Variables** für alle API-Keys und Secrets. Alle sensiblen Daten bleiben bei dir und werden **niemals in Git committet**. 🔐
 
-**Keine Sorge** - alle sensiblen Daten bleiben bei dir und werden nie in Git committet. �
+✅ **Systemd Service ist sicher** - Keine Geheimnisse im Service-File  
+✅ **Geschützte .env Datei** - Nur für Server Owner lesbar  
+✅ **Automatisches Token Management** - Refresh-Logik integriert
 
-## �🚀 Features
+## 🚀 Features
 
-- **🎁 Twitch Integration**: Automatische Behandlung von Channel Point Rewards
-- **📺 OBS Browser Source**: Schöne Animationen für Gold/Normal Summons  
-- **📱 Discord Benachrichtigungen**: Automatische Meldungen bei Gold-Summons und Fehlern
-- **🎯 Pity System**: Erhöhte Chancen nach mehreren normalen Summons
-- **⚡ Real-time Updates**: SignalR für Live-Updates im Browser
-- **🔄 Token Management**: Automatische Refresh-Logik für Twitch-Tokens
-- **🛡️ Rate Limiting**: Schutz vor API-Missbrauch
-- **❤️ Health Checks**: Monitoring der System-Gesundheit
-- **💾 Backup System**: Automatische Backups der Lottery-Daten
-- **🔧 Systemd Service**: Stabiler Server-Betrieb mit Auto-Restart
+- **🎁 Twitch Integration**: Automatische Channel Point Reward Behandlung
+- **📺 OBS Browser Source**: Schöne Summon-Animationen mit Gold/Normal Effekten  
+- **📱 Discord Benachrichtigungen**: Auto-Meldungen bei Gold-Summons und System-Fehlern
+- **🎯 Pity System**: Erhöhte Gold-Chancen nach normalen Summons
+- **⚡ Real-time Updates**: SignalR für Live-Browser-Updates
+- **🔄 Smart Token Management**: Automatische Twitch-Token Erneuerung
+- **🛡️ Rate Limiting & Security**: Schutz vor API-Missbrauch
+- **❤️ Health Monitoring**: System-Überwachung mit Status-Checks
+- **💾 Auto-Backup System**: Automatische Lottery-Daten Sicherung
+- **🖥️ Modern Admin Dashboard**: Schönes Web-Interface zur Systemkontrolle
+- **🔧 Systemd Service**: Stabiler Linux-Server-Betrieb mit Auto-Restart
 
 ## 📋 Voraussetzungen
 
@@ -28,68 +31,62 @@ Dieses Projekt verwendet **Environment Variables** für alle API-Keys und Secret
 - **Discord Webhook** (optional, aber empfohlen)
 - **Linux Server** für Production (Ubuntu/Debian empfohlen)
 
-## 🛠️ Installation & Setup
+## 🛠️ Quick Start
 
 ### **1. Repository klonen**
 ```bash
-git clone https://github.com/DEIN_USERNAME/TwitchSummonSystem.git
-cd TwitchSummonSystem
+git clone https://github.com/Fasterralf/TwitchSummonSystem.git
+cd TwitchSummonSystem/TwitchSummonSystem
 ```
 
-### **2. Twitch Developer App erstellen**
-1. Gehe zu [dev.twitch.tv/console/apps](https://dev.twitch.tv/console/apps)
-2. Erstelle eine neue App
-3. Notiere dir **Client ID** und **Client Secret**
-4. Hole dir **Access Tokens** (siehe [Twitch Auth Guide](https://dev.twitch.tv/docs/authentication))
-
-### **3. Channel Point Reward erstellen**
-1. Gehe zu deinem Twitch Creator Dashboard
-2. Einstellungen → Community → Channel Point Rewards
-3. Erstelle ein neues Custom Reward (z.B. "Summon")
-4. Notiere dir den **exakten Namen**
-
-### **4. Discord Webhooks erstellen** (optional)
-1. Discord Server → Server Settings → Integrations → Webhooks
-2. Erstelle 2 Webhooks: einen für normale Meldungen, einen für Fehler
-3. Kopiere die Webhook-URLs
-
-### **5. Environment Variables einrichten**
-
-**Für Development (.env Datei):**
-```bash
-cp .env.example .env
-# Bearbeite .env mit deinen echten Werten
-```
-
-**Für Production (Systemd Service):**
-Siehe `SERVER_SETUP.md` für detaillierte Anweisungen.
-
-### **6. Dependencies installieren & starten**
+### **2. Dependencies installieren**
 ```bash
 dotnet restore
+```
+
+### **3. Environment Variables einrichten**
+```bash
+cp .env.example .env
+# Bearbeite .env mit deinen echten Twitch/Discord Werten
+```
+
+### **4. Lokal testen**
+```bash
 dotnet run
+# App läuft auf http://localhost:5173
+# Admin Panel: http://localhost:5173/admin.html
 ```
 
-## 🌐 Webhook Setup (für Twitch EventSub)
+### **5. Production Deployment**
+Siehe **`SERVER_SETUP.md`** für detaillierte Server-Installation mit sicherer Konfiguration.
 
-Twitch Channel Point Rewards benötigen **öffentlich erreichbare Webhooks**. Du hast mehrere Optionen:
+## 🔧 Konfiguration
 
-### **Option 1: ngrok (Einfach für Testing)**
+### Twitch Developer Setup
+1. **App erstellen**: [dev.twitch.tv/console/apps](https://dev.twitch.tv/console/apps)
+2. **Client ID & Secret** notieren
+3. **Access Tokens** generieren ([Twitch Auth Guide](https://dev.twitch.tv/docs/authentication))
+4. **Channel Point Reward** erstellen (exakten Namen notieren!)
+
+### Discord Webhooks (optional)
+1. Discord Server → Integrations → Webhooks
+2. Erstelle 2 Webhooks: Normal & Error
+3. URLs in `.env` eintragen
+
+## 🌐 Webhook Setup (Twitch EventSub)
+
+Für Channel Point Rewards benötigst du eine **öffentlich erreichbare Webhook-URL**:
+
+### **Option 1: ngrok (Testing)**
 ```bash
-# ngrok installieren und starten
-ngrok http 5000
-
-# In anderem Terminal:
-./setup-webhook.sh
+ngrok http 5173
+./setup-webhook.sh  # In anderem Terminal
 ```
 
-### **Option 2: Öffentliche Server-IP**
+### **Option 2: Server mit öffentlicher IP**
 ```bash
-# Port 5000 öffnen
-sudo ufw allow 5000
-
-# Webhook manuell in Twitch konfigurieren:
-# http://DEINE_SERVER_IP:5000/api/twitch/webhook
+sudo ufw allow 5173
+# Webhook URL: http://DEINE_SERVER_IP:5173/api/twitch/webhook
 ```
 
 ### **Option 3: Domain mit Nginx (Production)**
@@ -98,67 +95,15 @@ sudo ufw allow 5000
 # Webhook URL: https://deine-domain.com/api/twitch/webhook
 ```
 
-⚠️ **Wichtig**: Ohne öffentliche Webhook-URL funktionieren Channel Point Rewards nicht!
+⚠️ **Ohne öffentliche Webhook-URL funktionieren Channel Point Rewards nicht!**
 
-## 🔧 Konfiguration
+## � System URLs
 
-Kopiere `.env.example` zu `.env` und fülle alle Werte aus:
-
-```bash
-# Twitch Configuration  
-TWITCH_CLIENT_ID=deine_client_id_hier
-TWITCH_CLIENT_SECRET=dein_client_secret_hier
-TWITCH_ACCESS_TOKEN=dein_access_token_hier
-TWITCH_REFRESH_TOKEN=dein_refresh_token_hier
-TWITCH_CHANNEL_ID=deine_channel_id_hier
-TWITCH_CHANNEL_NAME=dein_channel_name_hier
-TWITCH_SUMMON_REWARD_NAME=dein_reward_name_hier
-
-# Bot Configuration
-TWITCH_BOT_USERNAME=dein_bot_username_hier
-TWITCH_BOT_CLIENT_ID=deine_bot_client_id_hier
-TWITCH_BOT_CLIENT_SECRET=dein_bot_client_secret_hier
-TWITCH_CHAT_OAUTH_TOKEN=dein_chat_oauth_token_hier
-TWITCH_CHAT_REFRESH_TOKEN=dein_chat_refresh_token_hier
-
-# Discord Webhooks (optional)
-DISCORD_WEBHOOK_URL=deine_discord_webhook_url_hier
-DISCORD_ERROR_WEBHOOK_URL=deine_discord_error_webhook_url_hier
-```
-
-## 🚀 Production Deployment
-
-**Vollständige Anleitung:** Siehe `SERVER_SETUP.md`
-
-**Quick Start:**
-```bash
-# Auf dem Server:
-./deploy.sh
-
-# Monitoring:
-./monitor.sh
-
-# Logs anschauen:
-sudo journalctl -u twitch-summon -f
-```
-
-## 📊 API Endpoints
-
-- `GET /health` - System Health Check
-- `GET /api/summon/stats` - Lottery Statistiken  
-- `POST /api/summon/perform` - Manueller Summon
-- `POST /api/summon/pity/reset` - Pity Counter zurücksetzen
-- `GET /api/config/status` - Konfigurationsstatus
-
-## 🖥️ OBS Integration
-
-**Browser Source hinzufügen:**
-```
-URL: http://localhost:5173/obs.html
-Breite: 1920px
-Höhe: 1080px  
-FPS: 30
-```
+- **🏠 Main App**: `http://localhost:5173/`
+- **⚙️ Admin Dashboard**: `http://localhost:5173/admin.html`
+- **📺 OBS Browser Source**: `http://localhost:5173/obs.html`  
+- **❤️ Health Check**: `http://localhost:5173/health`
+- **� API Docs**: `http://localhost:5173/swagger` (Development)
 
 ## 🐳 Docker Support
 
@@ -183,21 +128,24 @@ docker run -p 5173:8080 --env-file .env twitch-summon-system
 └── twitch-summon.service # Systemd Service
 ```
 
-## 🔒 Sicherheit
+## 🔒 Sicherheit & Best Practices
 
-- ✅ **Keine Credentials in Code** - Alles über Environment Variables
+- ✅ **Keine Credentials im Code** - Alles über Environment Variables
+- ✅ **Sichere Systemd-Konfiguration** - Secrets in geschützter `.env` Datei
 - ✅ **Rate Limiting** aktiviert (falls .NET 8+)
-- ✅ **Global Exception Handling** 
+- ✅ **Global Exception Handling** mit Discord-Benachrichtigungen
 - ✅ **Automatic Backups** alle 30 Minuten
-- ✅ **Discord Error Notifications**
+- ✅ **Health Monitoring** mit `/health` Endpoint
+- ✅ **Production-ready Logging** mit strukturiertem Format
 
-## 📈 Monitoring
+## 📈 Monitoring & Admin
 
-- **Health Checks** unter `/health`
-- **Admin Panel** unter `/admin.html`
-- **Automatische Discord-Benachrichtigungen** bei Fehlern
-- **Strukturiertes Logging** mit Emojis
-- **Systemd Integration** für Server-Monitoring
+- **🖥️ Admin Dashboard**: `/admin.html` - Modernes Web-Interface
+- **❤️ Health Checks**: `/health` - System-Status API
+- **📊 Real-time Stats**: Lottery-Statistiken und Token-Status
+- **🔄 Auto-Reconnect**: Intelligente Chat-Bot Wiederverbindung
+- **📱 Discord Alerts**: Automatische Fehler-Benachrichtigungen
+- **📈 Systemd Integration**: Server-Monitoring mit `journalctl`
 
 ## 🤝 Contributing
 
@@ -211,25 +159,31 @@ docker run -p 5173:8080 --env-file .env twitch-summon-system
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
-## 🆘 Support & FAQ
+## 🆘 Troubleshooting & FAQ
 
 **❓ "Summon Reward nicht gefunden"**
-- Prüfe, ob der Reward-Name in der Konfiguration exakt mit dem Twitch Reward übereinstimmt
+- Prüfe, ob der Reward-Name in `.env` exakt mit dem Twitch Reward übereinstimmt
+- Verwende das Admin Dashboard zur Diagnose
 
 **❓ "Chat Bot verbindet nicht"**  
-- Prüfe Chat OAuth Token Berechtigung (chat:read, chat:edit)
-- Verwende das Admin Panel für Diagnose
+- Prüfe Chat OAuth Token Berechtigung (`chat:read`, `chat:edit`)
+- Admin Panel → Chat Tab für detaillierte Status-Info
 
 **❓ "Discord Benachrichtigungen funktionieren nicht"**
-- Prüfe Webhook URLs in der Konfiguration
-- Teste mit `curl -X POST WEBHOOK_URL -d '{"content":"Test"}'`
+- Teste Webhook: `curl -X POST WEBHOOK_URL -d '{"content":"Test"}'`
+- Prüfe URLs in `.env` Konfiguration
 
-**❓ Bei weiteren Problemen:**
-- Öffne ein Issue mit detaillierten Logs
+**❓ "Tokens sind abgelaufen"**
+- Admin Dashboard zeigt Token-Status und Ablaufzeiten
+- System erneuert Tokens automatisch (falls Refresh-Token gültig)
+
+**❓ Weitere Probleme?**
+- Öffne ein GitHub Issue mit detaillierten Logs
 - Verwende `./monitor.sh` für System-Diagnose
+- Logs: `sudo journalctl -u twitch-summon -f`
 
 ---
 
 **🎮 Viel Spaß mit deinem Twitch Summon System!** 
 
-Erstellt mit ❤️ für die Twitch Community
+Made with ❤️ for the Twitch Community by [Fasterralf](https://github.com/Fasterralf)

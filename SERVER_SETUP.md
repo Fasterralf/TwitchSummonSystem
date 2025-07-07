@@ -1,6 +1,45 @@
-# 🚀 Quick Server Setup Guide
+# 🚀 Server Setup & Deployment Guide
 
-## Auf dem Contabo Server ausführen:
+## 🔐 WICHTIG: Sichere Installation
+
+Die `twitch-summon.service` Datei ist jetzt sicher und enthält **KEINE Geheimnisse** mehr!
+Alle sensiblen Daten werden über eine geschützte `.env` Datei geladen.
+
+## 📋 Erste Installation auf dem Server:
+
+### 1. Projekt klonen
+```bash
+git clone https://github.com/Fasterralf/TwitchSummonSystem.git
+cd TwitchSummonSystem/TwitchSummonSystem
+```
+
+### 2. 🔐 Sichere .env Datei erstellen
+```bash
+# Erstelle sichere .env Datei in HOME Verzeichnis
+cp .env.production ~/.env
+
+# WICHTIG: Setze sichere Berechtigung (nur Owner kann lesen)
+chmod 600 ~/.env
+
+# Bearbeite die Datei mit deinen aktuellen Tokens
+nano ~/.env
+```
+
+### 3. Systemd Service installieren
+```bash
+# Service-Datei anpassen (USERNAME ersetzen)
+sudo cp twitch-summon.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable twitch-summon
+```
+
+### 4. Erstes Deployment
+```bash
+chmod +x deploy.sh monitor.sh
+./deploy.sh
+```
+
+## 🔄 Bei Updates - Code aktualisieren:
 
 ### 1. Nach Git Push - Code aktualisieren:
 ```bash
@@ -24,26 +63,37 @@ chmod +x deploy.sh monitor.sh
 sudo journalctl -u twitch-summon -f
 ```
 
-## 🔧 Troubleshooting:
+## 🛡️ Sicherheitsvorteile:
 
-### Service neu starten:
+1. **Keine Geheimnisse in Service-Datei** - Systemd Service ist sauber
+2. **Geschützte .env Datei** - Nur Owner kann Tokens lesen (`chmod 600`)
+3. **Nicht in Git** - `.env.production` wird niemals committed
+4. **Einfache Updates** - Service-Datei kann öffentlich geteilt werden
+
+## ✅ Token Aktualisierung:
+
+Wenn du Tokens erneuern musst:
 ```bash
+# Nur .env Datei bearbeiten
+nano ~/.env
+
+# Service neu starten
 sudo systemctl restart twitch-summon
 ```
 
-### Service Status prüfen:
+**NIEMALS** Tokens direkt in die Service-Datei schreiben!
+
+## 🔧 Debugging:
+
 ```bash
+# Service Logs anzeigen
+sudo journalctl -u twitch-summon -f
+
+# Service Status prüfen
 sudo systemctl status twitch-summon
-```
 
-### Konfiguration prüfen:
-```bash
-curl http://localhost:5000/health
-```
-
-### Fehler-Logs anzeigen:
-```bash
-sudo journalctl -u twitch-summon --since "1 hour ago" | grep ERROR
+# Service neu starten
+sudo systemctl restart twitch-summon
 ```
 
 ## 🌐 URLs (nach Deployment):
