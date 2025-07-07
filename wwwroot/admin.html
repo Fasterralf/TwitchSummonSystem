@@ -639,6 +639,12 @@
                     </div>
                     <div class="info-grid">
                         <div class="info-item">
+                            <span class="info-label">User Token</span>
+                            <span class="status status-online" id="user-token-status">
+                                <i class="fas fa-circle"></i> Valid
+                            </span>
+                        </div>
+                        <div class="info-item">
                             <span class="info-label">App Token</span>
                             <span class="status status-online" id="app-token-status">
                                 <i class="fas fa-circle"></i> Valid
@@ -679,6 +685,10 @@
                         <h3>Token Information</h3>
                     </div>
                     <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">User Token Expires</span>
+                            <span class="info-value" id="user-token-expires">-</span>
+                        </div>
                         <div class="info-item">
                             <span class="info-label">App Token Expires</span>
                             <span class="info-value" id="app-token-expires">-</span>
@@ -915,47 +925,45 @@
             if (data) {
                 console.log('Token Status Data:', JSON.stringify(data, null, 2)); // Better debug log
                 
-                // API returns userToken, appToken, and chatToken
-                // We display userToken as "App Token" in the UI for clarity
+                // API returns userToken, appToken, and chatToken - display all 3
                 const userTokenValid = data.userToken?.valid || false;
+                const appTokenValid = data.appToken?.valid || false;
                 const chatTokenValid = data.chatToken?.valid || false;
                 
-                updateStatus('app-token-status', userTokenValid);
+                updateStatus('user-token-status', userTokenValid);
+                updateStatus('app-token-status', appTokenValid);
                 updateStatus('chat-token-status', chatTokenValid);
-                updateStatus('token-status', userTokenValid && chatTokenValid);
+                updateStatus('token-status', userTokenValid && appTokenValid && chatTokenValid);
                 
-                // Display userToken expiration as "App Token" (this is the main Twitch API token)
-                if (data.userToken?.expiresAt) {
-                    const userDate = new Date(data.userToken.expiresAt);
-                    console.log('User Token (displayed as App) Expires:', data.userToken.expiresAt, 'Parsed:', userDate);
-                    // Format as local time with clear timezone indication
-                    const formattedDate = userDate.toLocaleString('en-US', {
-                        year: 'numeric',
-                        month: '2-digit',
+                // Helper function to format dates in server timezone (CEST) without confusing GMT display
+                function formatServerTime(isoString) {
+                    const date = new Date(isoString);
+                    // Use German locale to match server logs (dd.mm.yyyy hh:mm)
+                    return date.toLocaleString('de-DE', {
                         day: '2-digit',
+                        month: '2-digit', 
+                        year: 'numeric',
                         hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        timeZoneName: 'short'
+                        minute: '2-digit'
                     });
-                    updateElement('app-token-expires', formattedDate);
+                }
+                
+                // Display userToken expiration
+                if (data.userToken?.expiresAt) {
+                    console.log('User Token Expires:', data.userToken.expiresAt);
+                    updateElement('user-token-expires', formatServerTime(data.userToken.expiresAt));
+                }
+                
+                // Display appToken expiration  
+                if (data.appToken?.expiresAt) {
+                    console.log('App Token Expires:', data.appToken.expiresAt);
+                    updateElement('app-token-expires', formatServerTime(data.appToken.expiresAt));
                 }
                 
                 // Display chatToken expiration
                 if (data.chatToken?.expiresAt) {
-                    const chatDate = new Date(data.chatToken.expiresAt);
-                    console.log('Chat Token Expires:', data.chatToken.expiresAt, 'Parsed:', chatDate);
-                    // Format as local time with clear timezone indication
-                    const formattedDate = chatDate.toLocaleString('en-US', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        timeZoneName: 'short'
-                    });
-                    updateElement('chat-token-expires', formattedDate);
+                    console.log('Chat Token Expires:', data.chatToken.expiresAt);
+                    updateElement('chat-token-expires', formatServerTime(data.chatToken.expiresAt));
                 }
             }
         }
