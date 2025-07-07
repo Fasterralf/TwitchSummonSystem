@@ -14,22 +14,10 @@ SyslogIdentifier=twitch-summon
 User=[USERNAME]
 Group=[USERNAME]
 
-# Environment Variables (WICHTIG!)
+# Environment Variables - SECURE VERSION
+# DO NOT put secrets here! Use /etc/environment or EnvironmentFile instead
 Environment=ASPNETCORE_ENVIRONMENT=Production
-Environment=TWITCH_CLIENT_ID=wwsw64nopy5scsjfn0ab4vbgvo0jd2
-Environment=TWITCH_CLIENT_SECRET=wiw93k8jgxu8di9d56rntxck2jigmv
-Environment=TWITCH_ACCESS_TOKEN=w9x0toczjm1mcnrp080ueetkotsc8o
-Environment=TWITCH_REFRESH_TOKEN=jgl7k14rcmh7efkyywgcwe2fxbz6hp91hf2530qysp7plhxe6a
-Environment=TWITCH_CHANNEL_ID=67270497
-Environment=TWITCH_CHANNEL_NAME=arabnp
-Environment=TWITCH_SUMMON_REWARD_NAME=test
-Environment=TWITCH_BOT_USERNAME=ArabNP
-Environment=TWITCH_BOT_CLIENT_ID=hhgl24njscg9ftl0l2y0eoici524jx
-Environment=TWITCH_BOT_CLIENT_SECRET=2lfg7jhkofeeljlwyw88yhlnvm2zr5
-Environment=TWITCH_CHAT_OAUTH_TOKEN=oauth:bgj1setgfl9qww6b6un53d6b2djpoi
-Environment=TWITCH_CHAT_REFRESH_TOKEN=m114myif9s8t62tu221al4nd5n5u675x44c0fu6pbmbhul02ly
-Environment=DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/1378763307523113113/GqDHUnr6VB2_guwaqfkT10VCTzCgHmvwfIosUiXaRHNZee-dW-SqbgFM0IKj_I4BoNTG
-Environment=DISCORD_ERROR_WEBHOOK_URL=https://discord.com/api/webhooks/1377299277318983700/KL_qfKEn82YqIRoCZXPSSGpjcqkCRRoHaawO2ZNRfUXEj19uAOxPWRZw5OwGgvXng-gu
+EnvironmentFile=/home/[USERNAME]/.env
 
 [Install]
 WantedBy=multi-user.target
