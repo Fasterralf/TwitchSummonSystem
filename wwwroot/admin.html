@@ -680,12 +680,12 @@
                     </div>
                     <div class="info-grid">
                         <div class="info-item">
-                            <span class="info-label">Last App Token Refresh</span>
-                            <span class="info-value" id="last-app-refresh">-</span>
+                            <span class="info-label">App Token Expires</span>
+                            <span class="info-value" id="app-token-expires">-</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">Last Chat Token Refresh</span>
-                            <span class="info-value" id="last-chat-refresh">-</span>
+                            <span class="info-label">Chat Token Expires</span>
+                            <span class="info-value" id="chat-token-expires">-</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Auto Refresh</span>
@@ -921,12 +921,32 @@
                 if (data.appToken?.expiresAt) {
                     const appDate = new Date(data.appToken.expiresAt);
                     console.log('App Token Expires:', data.appToken.expiresAt, 'Parsed:', appDate);
-                    updateElement('last-app-refresh', appDate.toLocaleString('de-DE'));
+                    // Format as local time with clear timezone indication
+                    const formattedDate = appDate.toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        timeZoneName: 'short'
+                    });
+                    updateElement('app-token-expires', formattedDate);
                 }
                 if (data.chatToken?.expiresAt) {
                     const chatDate = new Date(data.chatToken.expiresAt);
                     console.log('Chat Token Expires:', data.chatToken.expiresAt, 'Parsed:', chatDate);
-                    updateElement('last-chat-refresh', chatDate.toLocaleString('de-DE'));
+                    // Format as local time with clear timezone indication
+                    const formattedDate = chatDate.toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        timeZoneName: 'short'
+                    });
+                    updateElement('chat-token-expires', formattedDate);
                 }
             }
         }
